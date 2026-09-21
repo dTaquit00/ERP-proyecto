@@ -1,0 +1,9 @@
+{
+  "name": "@erp/config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Configuraciones compartidas (TypeScript, herramientas) del monorepo ERP.",
+  "files": [
+    "tsconfig.base.json"
+  ]
+}

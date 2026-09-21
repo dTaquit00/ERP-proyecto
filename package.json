@@ -1,0 +1,43 @@
+{
+  "name": "erp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sistema ERP multiempresa (web + móvil + API) construido con TypeScript, Express, React Native y MongoDB Atlas.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run build:packages && npm run build:api",
+    "build:packages": "tsc -p packages/types/tsconfig.build.json && tsc -p packages/validation/tsconfig.build.json",
+    "build:api": "tsc -p apps/api/tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "npm run typecheck && vitest run",
+    "test:watch": "vitest",
+    "dev:api": "npm run build:packages && npm run dev --workspace apps/api",
+    "start:api": "npm run start --workspace apps/api",
+    "seed": "npm run build:packages && npm run seed --workspace apps/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^6.0.0",
+    "eslint": "^9.0.0",
+    "mongodb-memory-server": "^10.0.0",
+    "supertest": "^7.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "mongodb-memory-server@10.4.3": true
+  }
+}

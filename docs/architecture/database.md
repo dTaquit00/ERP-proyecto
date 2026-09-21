@@ -1,0 +1,95 @@
+# Modelo de datos (MongoDB)
+
+## Principios
+
+1. **Referencia vs documento embebido**: se embebe solo si los datos se leen siempre
+   juntos, tienen sentido de pertenencia y no se consultan de forma independiente
+   (ej. líneas de una venta → embebidas; cliente de una venta → referencia).
+2. `companyId` en todo documento empresarial (multiempresa), incluso si la v1 usa una
+   sola empresa.
+3. Índices solo donde mejoran consultas frecuentes o garantizan unicidad.
+4. **El stock nunca se modifica en silencio**: cada cambio genera un
+   `inventory_movements`.
+
+## Colecciones — Fase 6 (implementadas)
+
+### companies
+| Campo | Tipo | Notas |
+|---|---|---|
+| name | string | obligatorio |
+| legalName, taxId, phone, email, address | string? | M04 |
+| status | `active` \| `inactive` | |
+| settings | object | configuración empresarial |
+| createdAt / updatedAt | Date | timestamps |
+
+Índice: `{name}`.
+
+### roles (RBAC)
+| Campo | Tipo | Notas |
+|---|---|---|
+| companyId | ObjectId → companies | |
+| name | string | minúsculas; único por empresa |
+| displayName | string | |
+| permissions | string[] | catálogo de `packages/types/permissions.ts` |
+| isSystem | boolean | roles del sistema no se eliminan |
+
+Índice único: `{companyId, name}`.
+
+### users
+| Campo | Tipo | Notas |
+|---|---|---|
+| companyId | ObjectId | |
+| email | string | minúsculas; único por empresa |
+| passwordHash | string | `select: false`; scrypt |
+| firstName, lastName | string | |
+| roleId | ObjectId → roles | |
+| isActive | boolean | login/requests lo verifican |
+| lastLoginAt, passwordChangedAt | Date? | control de sesiones |
+
+Índice único: `{companyId, email}`; índice `{companyId, roleId}`.
+
+### sessions (refresh tokens)
+| Campo | Tipo | Notas |
+|---|---|---|
+| userId | ObjectId | |
+| tokenHash | string | SHA-256 del token; único |
+| ip, userAgent | string? | trazabilidad |
+| expiresAt | Date | índice TTL (`expireAfterSeconds: 0`) |
+| lastUsedAt, revokedAt | Date? | rotación, logout, revocaciones |
+
+Índices: `{tokenHash}` único, `{expiresAt}` TTL, `{userId, revokedAt}`.
+
+### password_reset_tokens
+`userId`, `tokenHash` (único), `expiresAt` (TTL), `usedAt` (un solo uso).
+
+## Colecciones — fases posteriores
+
+| Colección | Fase | Notas clave |
+|---|---|---|
+| branches | 13 | sucursales; `{companyId, code}` único |
+| categories | 8 | jerarquía padre/hijo opcional (referencia) |
+| products | 8 | `{companyId, sku}` único; precios, impuestos, unidad, imagen, barcode |
+| customers / suppliers | 10 | referenciados por ventas/compras |
+| warehouses | 9 | referencian `branchId` |
+| stock_balances | 9 | `{companyId, warehouseId, productId}` único → consulta rápida de existencias |
+| inventory_movements | 9 | tipo `IN OUT ADJUSTMENT TRANSFER RETURN`; documento inmutable con stock resultante |
+| sales | 11 | cabecera referencial + `items[]` embebidos (snapshot de precio/descuento) |
+| purchases | 12 | ítems embebidos; recepción genera movimientos IN |
+| cash_movements | futuro | finanzas |
+| audit_logs | 15 | usuario, acción, recurso, resourceId, ip, resultado, fecha |
+
+### Justificaciones de diseño
+
+- **Ítems embebidos en ventas/compras**: se leen siempre con la cabecera y son
+  inmutables tras confirmar (snapshot del precio del momento); no se consultan solos.
+- **stock_balances separado de movements**: la existencia actual es una consulta
+  caliente (dashboard, disponibilidad); el histórico es append-only y grande.
+- **audit_logs separado**: crecimiento independiente, sin joins con datos de negocio,
+  y política propia de retención. Nunca almacena contraseñas ni tokens.
+- **Relación usuario↔rol por referencia**: el rol cambia sin duplicar permisos.
+
+## Índices globales por consulta frecuente
+
+- Ventas: `{companyId, createdAt}`, `{companyId, status}`, `{companyId, customerId}`
+- Movimientos: `{companyId, productId, createdAt}`, `{warehouseId, createdAt}`
+- Auditoría: `{companyId, createdAt}`, `{companyId, resource, resourceId}`

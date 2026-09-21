@@ -1,0 +1,11 @@
+{
+  "name": "@erp/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ERP web con React Native Web + TypeScript. Se implementa en la Fase 16.",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"Frontend web: se implementa en la Fase 16\"",
+    "build": "echo \"Frontend web: se implementa en la Fase 16\""
+  }
+}

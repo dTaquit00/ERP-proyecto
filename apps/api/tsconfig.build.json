@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": false,
+    "declarationMap": false,
+    // El build resuelve @erp/* vía node_modules → dist de los packages (build:packages
+    // se ejecuta antes). Sin esto, los paths del tsconfig raíz arrastrarían el fuente
+    // de los packages al programa y romperían rootDir.
+    "paths": {}
+  },
+  "include": ["src/**/*"],
+  "exclude": ["src/**/*.test.ts", "dist", "node_modules"]
+}

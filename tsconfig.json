@@ -1,0 +1,21 @@
+{
+  "extends": "./packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@erp/types": ["packages/types/src/index.ts"],
+      "@erp/validation": ["packages/validation/src/index.ts"],
+      "@erp/api": ["apps/api/src/app.ts"]
+    }
+  },
+  "include": [
+    "apps/api/src/**/*",
+    "packages/types/src/**/*",
+    "packages/validation/src/**/*",
+    "tests/**/*",
+    "vitest.config.ts"
+  ],
+  "exclude": ["**/dist/**", "**/node_modules/**"]
+}

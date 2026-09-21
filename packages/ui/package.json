@@ -1,0 +1,11 @@
+{
+  "name": "@erp/ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Componentes de interfaz compartidos entre React Native (móvil) y React Native Web. Se implementa en la Fase 16.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "files": [
+    "src"
+  ]
+}

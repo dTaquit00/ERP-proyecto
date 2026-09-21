@@ -1,0 +1,36 @@
+# Dependencias
+node_modules/
+
+# Compilación
+dist/
+build/
+*.tsbuildinfo
+
+# Salida accidental de tsc junto al fuente (los src/ solo contienen .ts)
+apps/*/src/**/*.js
+apps/*/src/**/*.js.map
+apps/*/src/**/*.d.ts
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts
+
+# Entorno (nunca versionar credenciales reales)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cobertura
+coverage/
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Tests
+.vitest/

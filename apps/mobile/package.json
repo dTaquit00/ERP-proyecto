@@ -1,0 +1,11 @@
+{
+  "name": "@erp/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ERP móvil con React Native + TypeScript. Se implementa en la Fase 16.",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"Frontend móvil: se implementa en la Fase 16\"",
+    "build": "echo \"Frontend móvil: se implementa en la Fase 16\""
+  }
+}
