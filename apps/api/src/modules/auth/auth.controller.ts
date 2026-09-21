@@ -6,8 +6,8 @@ import {
   resetPasswordSchema,
 } from '@erp/validation';
 import { env } from '../../config/env.js';
-import { AuthError } from '../../shared/http/errors.js';
 import { parseOrThrow } from '../../shared/http/parse.js';
+import { requireAuth } from '../../shared/http/auth-req.js';
 import { sendOk } from '../../shared/http/response.js';
 import { authService } from './auth.service.js';
 import type { RequestContext } from './auth.types.js';
@@ -72,14 +72,11 @@ export const authController = {
   }) satisfies RequestHandler,
 
   me: ((req: Request, res: Response) => {
-    const auth = req.auth;
-    if (!auth) throw new AuthError('Se requiere autenticación', 'MISSING_TOKEN');
-    return sendOk(res, authService.me(auth));
+    return sendOk(res, authService.me(requireAuth(req)));
   }) satisfies RequestHandler,
 
   changePassword: (async (req: Request, res: Response) => {
-    const auth = req.auth;
-    if (!auth) throw new AuthError('Se requiere autenticación', 'MISSING_TOKEN');
+    const auth = requireAuth(req);
     const input = parseOrThrow(changePasswordSchema, req.body);
     await authService.changePassword(auth, input);
     return sendOk(res, { message: 'Contraseña actualizada' });

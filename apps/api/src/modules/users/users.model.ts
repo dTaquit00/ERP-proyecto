@@ -11,6 +11,9 @@ const userSchema = new Schema(
     isActive: { type: Boolean, required: true, default: true },
     lastLoginAt: { type: Date },
     passwordChangedAt: { type: Date },
+    // Declarados para tiparlos; los gestiona mongoose gracias a `timestamps: true`.
+    createdAt: { type: Date },
+    updatedAt: { type: Date },
   },
   { timestamps: true, collection: 'users' },
 );

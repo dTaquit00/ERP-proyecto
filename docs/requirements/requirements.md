@@ -12,8 +12,8 @@ debe pasar la "Definición de terminado" (ver `docs/qa/quality-checklist.md`).
 | ID | Módulo | Requisitos esenciales | Fase |
 |---|---|---|---|
 | M01 | Autenticación | Login, logout, refresh con rotación, recuperación y cambio de contraseña, protección de rutas, expiración y control de sesiones | 6 ✅ |
-| M02 | Usuarios | Crear, editar, activar/desactivar, consultar, cambiar rol, historial | 7 |
-| M03 | Roles y permisos | RBAC; roles: administrador, gerente, vendedor, almacén, compras, finanzas, auditor; el **backend** verifica permisos | 7 |
+| M02 | Usuarios | Crear, editar, activar/desactivar, consultar, cambiar rol, historial | 7 ✅ |
+| M03 | Roles y permisos | RBAC; roles: administrador, gerente, vendedor, almacén, compras, finanzas, auditor; el **backend** verifica permisos | 7 ✅ |
 | M04 | Empresas | nombre, razón social, identificación fiscal, teléfono, correo, dirección, estado, configuración | 13 |
 | M05 | Sucursales | Crear, editar, desactivar, consultar | 13 |
 | M06 | Categorías | Crear, editar, desactivar, consultar | 8 |

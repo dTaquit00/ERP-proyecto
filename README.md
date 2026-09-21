@@ -14,8 +14,9 @@ Construido con **TypeScript estricto** en todo el stack:
 | Validación | Zod (schemas compartidos) |
 | Pruebas | Vitest + Supertest + mongodb-memory-server |
 
-> Estado actual: **Fase 6 completada** — monorepo, API base, seguridad, MongoDB y
-> autenticación (M01) con pruebas unitarias e de integración. Los módulos restantes
+> Estado actual: **Fase 7 completada** — monorepo, API base, seguridad, MongoDB,
+> autenticación (M01), usuarios (M02) y roles/permisos (M03), con RBAC verificado
+> en backend y pruebas unitarias e de integración. Los módulos restantes
 > se construyen por fases según `docs/requirements/requirements.md`.
 
 ---
@@ -147,7 +148,7 @@ Base: `/api/v1`. Convención completa en `docs/api/api.md`.
 
 Éxito: `{ "data": ... }` · Error: `{ "error": { "code", "message", "details?" } }`
 
-Endpoints (Fase 6):
+Endpoints (Fases 6–7):
 
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -158,6 +159,13 @@ Endpoints (Fase 6):
 | POST | `/auth/change-password` | Cambio de contraseña (revoca otras sesiones) |
 | POST | `/auth/request-password-reset` | Solicitud de restablecimiento |
 | POST | `/auth/reset-password` | Aplica el restablecimiento (un solo uso) |
+| GET, POST | `/users` | Listado paginado con filtros / creación (`users.read`/`users.write`) |
+| GET, PATCH | `/users/:id` | Detalle / edición (incluye cambio de rol) |
+| POST | `/users/:id/activate`, `/users/:id/deactivate` | Activar / desactivar con protecciones (`SELF_DEACTIVATE`, `LAST_ACTIVE_ADMIN`) |
+| GET | `/users/:id/history` | Fechas reales + sesiones recientes |
+| GET, POST | `/roles` | Roles con `userCount` / creación (`roles.read`/`roles.write`) |
+| GET, PATCH, DELETE | `/roles/:id` | Detalle / edición / borrado protegido (`SYSTEM_ROLE`, `ROLE_IN_USE`) |
+| GET | `/permissions` | Catálogo de permisos para el editor de roles |
 | GET | `/health` | Estado del servidor y de MongoDB |
 
 ## Base de datos

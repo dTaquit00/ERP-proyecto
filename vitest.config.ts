@@ -11,7 +11,11 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['apps/api/src/**/*.test.ts', 'tests/**/*.test.ts'],
+    include: [
+      'apps/api/src/**/*.test.ts',
+      'packages/*/src/**/*.test.ts',
+      'tests/**/*.test.ts',
+    ],
     exclude: ['**/node_modules/**', '**/dist/**'],
     setupFiles: ['tests/setup.ts'],
     testTimeout: 30_000,

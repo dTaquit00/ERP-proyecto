@@ -28,11 +28,11 @@ Error:
 |---|---|
 | 200 | Éxito |
 | 201 | Recurso creado |
-| 400 | Validación (`VALIDATION_ERROR`) o regla (`INVALID_RESET_TOKEN`...) |
+| 400 | Validación (`VALIDATION_ERROR`) o regla (`INVALID_RESET_TOKEN`, `ROLE_NOT_FOUND`, `SELF_DEACTIVATE`) |
 | 401 | No autenticado (`MISSING_TOKEN`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `INVALID_CREDENTIALS`, `SESSION_INVALID`, `REFRESH_TOKEN_MISSING`) |
 | 403 | Sin permisos (`INSUFFICIENT_PERMISSIONS`, `ACCOUNT_DISABLED`, `CURRENT_PASSWORD_INVALID`) |
-| 404 | `NOT_FOUND` |
-| 409 | `CONFLICT` / `DUPLICATE` |
+| 404 | `NOT_FOUND` (también recurso de otra empresa: no se filtra su existencia) |
+| 409 | `CONFLICT` / `DUPLICATE` / `EMAIL_IN_USE` / `ROLE_NAME_IN_USE` / `SYSTEM_ROLE` / `ROLE_IN_USE` / `LAST_ACTIVE_ADMIN` |
 | 422 | Regla de negocio no procesable (reservado) |
 | 429 | `RATE_LIMITED` |
 | 500 | `INTERNAL_ERROR` (mensaje genérico; detalle solo en log) |
@@ -105,13 +105,41 @@ Respuesta fallida:
 
 ---
 
+## M02 — Usuarios
+
+Todos exigen `Authorization: Bearer` y RBAC en backend. Scope: siempre la empresa del token.
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/users` | `users.read` | Listado paginado `{items, meta}`. Query: `page, limit, search, roleId, status(active\|inactive), sort(email\|firstName\|lastName\|createdAt\|lastLoginAt), order(asc\|desc)`. Incluye `roleName`; nunca `passwordHash`. |
+| POST | `/users` | `users.write` | Crea usuario. Body `{email, password, firstName, lastName, roleId, isActive?}` → 201. Errores: 409 `EMAIL_IN_USE`, 400 `ROLE_NOT_FOUND`. |
+| GET | `/users/:id` | `users.read` | Detalle con rol. Otra empresa o inexistente → 404. |
+| PATCH | `/users/:id` | `users.write` | Edita `email/firstName/lastName/roleId`. Body no vacío (400). Sin borrado físico. |
+| POST | `/users/:id/activate` | `users.write` | Reactiva (login vuelve a funcionar). |
+| POST | `/users/:id/deactivate` | `users.write` | Desactiva. 400 `SELF_DEACTIVATE` (a uno mismo), 409 `LAST_ACTIVE_ADMIN` (último admin activo). |
+| GET | `/users/:id/history` | `users.read` | `{userId, createdAt, lastLoginAt, passwordChangedAt, sessions[]}` — fechas reales + sesiones recientes (sin tokens). |
+
+---
+
+## M03 — Roles y permisos
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/roles` | `roles.read` | Listado paginado con `userCount` por rol. Orden por nombre. |
+| GET | `/roles/:id` | `roles.read` | Detalle con `userCount`. Otra empresa → 404. |
+| POST | `/roles` | `roles.write` | Crea rol. Body `{name(minúsculas/numérico/guiones), displayName, permissions[]}` → 201. 409 `ROLE_NAME_IN_USE`, 400 permiso fuera de catálogo. |
+| PATCH | `/roles/:id` | `roles.write` | Edita `displayName` y `permissions`. El `name` no es editable (identificador inmutable). |
+| DELETE | `/roles/:id` | `roles.write` | 200 `{id, deleted:true}`. 409 `SYSTEM_ROLE` (rol del sistema), 409 `ROLE_IN_USE` (asignado a usuarios). |
+| GET | `/permissions` | `roles.read` | Catálogo completo `{permissions[]}` para el editor de roles del frontend. |
+
+> Los 7 roles del sistema (`administrador, gerente, vendedor, almacen, compras, finanzas, auditor`)
+> se crean idempotentemente por empresa vía `rolesService.ensureSystemRoles` (seed y pruebas).
+
+---
+
 ## Endpoints previstos (por fase)
 
 ```
-GET|POST            /users                (Fase 7)
-GET|PATCH|DELETE    /users/:id            (Fase 7)
-POST                /users/:id/activate|deactivate
-GET|POST            /roles                (Fase 7)
 GET|POST            /products             (Fase 8)
 GET|PATCH|DELETE    /products/:id
 GET|POST            /categories           (Fase 8)

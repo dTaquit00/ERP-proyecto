@@ -9,6 +9,6 @@ export interface UserSummary {
   roleName: string;
   isActive: boolean;
   lastLoginAt?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }

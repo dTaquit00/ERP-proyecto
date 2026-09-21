@@ -16,11 +16,11 @@ npm run build      # compilación de producción
 
 | Nivel | Ubicación | Herramienta | Estado |
 |---|---|---|---|
-| Unitarias | junto al código (`apps/api/src/**/*.test.ts`) | Vitest | ✅ Fase 6 |
-| Integración API→service→MongoDB | `tests/integration/` | Vitest + Supertest + mongodb-memory-server | ✅ Fase 6 |
+| Unitarias | junto al código (`apps/api/src/**/*.test.ts` y `packages/*/src/**/*.test.ts`) | Vitest | ✅ Fase 7 |
+| Integración API→service→MongoDB | `tests/integration/` | Vitest + Supertest + mongodb-memory-server | ✅ Fase 7 |
 | E2E | `tests/e2e/` | API: Vitest+Supertest; web: Playwright; móvil: Detox | ⏳ Fase 17 |
 
-## Cobertura actual (Fase 6)
+## Cobertura actual (Fase 7 — 137 pruebas: 67 unitarias + 70 de integración)
 
 - Hash/verificación de contraseñas (scrypt), incluidos hashes malformados.
 - Firma/verificación de JWT: expirado, manipulado, `typ` incorrecto, incompleto.
@@ -40,6 +40,15 @@ npm run build      # compilación de producción
 - Reset de contraseña: correo inexistente (sin filtrar), flujo completo,
   token de un solo uso, token inválido, política de contraseña.
 - Formato de error 404 estándar.
+- Usuarios: RBAC 401/403, aislamiento multiempresa (404), sin `passwordHash`,
+  paginación/búsqueda/filtros, `sort` no permitido (400), creación (201) y
+  duplicados (409 `EMAIL_IN_USE`), rol foráneo (400 `ROLE_NOT_FOUND`),
+  activar/desactivar (`ACCOUNT_DISABLED`, `SELF_DEACTIVATE`, `LAST_ACTIVE_ADMIN`),
+  historial con sesiones reales sin exponer tokens.
+- Roles: listado con los 7 roles del sistema y `userCount`, RBAC 401/403,
+  duplicados (`ROLE_NAME_IN_USE`), permisos fuera de catálogo (400),
+  `name` inmutable en edición, borrado protegido (`SYSTEM_ROLE`, `ROLE_IN_USE`),
+  aislamiento multiempresa (404), catálogo `/permissions`.
 
 ## Casos negativos obligatorios por módulo nuevo
 

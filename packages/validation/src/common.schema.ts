@@ -5,6 +5,11 @@ export const idSchema = z
   .string()
   .regex(/^[0-9a-f]{24}$/, 'Identificador inválido');
 
+/** Params estándar `:id` — valida antes de tocar la base de datos. */
+export const idParamsSchema = z.object({
+  id: idSchema,
+});
+
 /** Correo normalizado: sin espacios, en minúsculas. */
 export const emailSchema = z
   .string()

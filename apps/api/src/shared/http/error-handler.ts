@@ -36,11 +36,10 @@ export function normalizeError(error: unknown): AppError {
     }));
     return new ValidationError('Los datos proporcionados no son válidos', details);
   }
-  if (
-    error instanceof mongoose.MongooseError &&
-    'code' in error &&
-    (error as { code?: number }).code === 11000
-  ) {
+  // Duplicado (índice único) — cubre también los errores del driver en
+  // ejecuciones concurrentes, que no siempre son instancias de MongooseError.
+  const maybeDuplicate = error as { code?: unknown } | null;
+  if (typeof maybeDuplicate?.code === 'number' && maybeDuplicate.code === 11000) {
     return new ConflictError('El registro ya existe', 'DUPLICATE');
   }
   // Cuerpo JSON malformado (express.json)

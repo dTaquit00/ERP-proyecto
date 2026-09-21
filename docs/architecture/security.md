@@ -1,8 +1,8 @@
 # Seguridad
 
-Estado: Fase 6 (autenticación). Marco completo por fase en `docs/qa/quality-checklist.md`.
+Estado: Fase 7 (autenticación + usuarios/roles). Marco completo por fase en `docs/qa/quality-checklist.md`.
 
-## Implementado (Fase 4–6)
+## Implementado (Fase 4–7)
 
 ### Autenticación
 - Contraseñas con **scrypt** (`N=16384, r=8, p=1`, sal aleatoria de 16 bytes,

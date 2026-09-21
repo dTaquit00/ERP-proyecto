@@ -41,6 +41,23 @@ Definición de "terminado" aplicada por fase.
 - [x] Sin secretos en el código (entorno validado; `.env` fuera de Git)
 - [x] Documentación actualizada (README, architecture, database, security, api, qa)
 
+## Fase 7 — Usuarios (M02) y Roles (M03)
+
+- [x] Módulo completo `users/`: model · repository · service · controller · routes · types · tests
+- [x] Módulo completo `roles/`: igual estructura + `roles.system.ts` (fuente única de los 7 roles)
+- [x] Endpoints: `GET/POST /users`, `GET /users/:id`, `PATCH /users/:id`, `POST /users/:id/activate|deactivate`, `GET /users/:id/history`, `GET/POST /roles`, `GET /roles/:id`, `PATCH/DELETE /roles/:id`, `GET /permissions`
+- [x] RBAC verificado en backend (`users.read/write`, `roles.read/write`) con pruebas negativas 401/403
+- [x] Aislamiento multiempresa: recursos de otra empresa → 404 (sin filtrar existencia)
+- [x] Nunca se expone `passwordHash` ni `tokenHash` en respuestas (verificado por test)
+- [x] Listado: paginación, `search` (regex-escapado), `status`, `sort` con whitelist anti sort-injection
+- [x] Sin eliminación de usuarios (solo desactivar) y sin edición del `name` de rol
+- [x] Reglas de negocio: `SELF_DEACTIVATE`, `LAST_ACTIVE_ADMIN`, `EMAIL_IN_USE`, `ROLE_NOT_FOUND`, `ROLE_NAME_IN_USE`, `SYSTEM_ROLE`, `ROLE_IN_USE`
+- [x] `GET /users/:id/history` con fechas reales + sesiones recientes (audit trail completo → Fase 15)
+- [x] Seed refactorizado sobre `ensureSystemRoles` (misma fuente que las pruebas)
+- [x] Pruebas: unitarias (repositorios/servicios/schemas) + integración (24 users + 17 roles, con negativos)
+- [x] Lint correcto · TypeScript sin errores · 137/137 tests · `npm run build` OK
+- [x] Documentación actualizada (api, test-cases, quality-checklist, requirements, architecture, README)
+
 ## Pendiente para fases siguientes
 
 - [ ] Auditoría (`audit_logs`) al confirmar operaciones empresariales — Fase 15

@@ -1,4 +1,5 @@
 import { SessionModel, type SessionDocument } from './auth.sessions.model.js';
+import { Types } from 'mongoose';
 
 export interface SessionCreateInput {
   userId: string;
@@ -28,6 +29,14 @@ export const sessionsRepository = {
     session.expiresAt = expiresAt;
     session.lastUsedAt = lastUsedAt;
     await session.save();
+  },
+
+  /** Sesiones recientes del usuario (historial M02), más nuevas primero. */
+  async findRecentByUser(userId: string, limit = 20): Promise<SessionDocument[]> {
+    return SessionModel.find({ userId: new Types.ObjectId(userId) })
+      .sort({ _id: -1 })
+      .limit(limit)
+      .exec();
   },
 
   async markUsed(session: SessionDocument, lastUsedAt: Date): Promise<void> {
