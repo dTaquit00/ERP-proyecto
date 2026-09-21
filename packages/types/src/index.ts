@@ -8,3 +8,5 @@ export * from './auth.types.js';
 export * from './user.types.js';
 export * from './company.types.js';
 export * from './roles.types.js';
+export * from './category.types.js';
+export * from './product.types.js';

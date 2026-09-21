@@ -16,11 +16,11 @@ npm run build      # compilación de producción
 
 | Nivel | Ubicación | Herramienta | Estado |
 |---|---|---|---|
-| Unitarias | junto al código (`apps/api/src/**/*.test.ts` y `packages/*/src/**/*.test.ts`) | Vitest | ✅ Fase 7 |
-| Integración API→service→MongoDB | `tests/integration/` | Vitest + Supertest + mongodb-memory-server | ✅ Fase 7 |
+| Unitarias | junto al código (`apps/api/src/**/*.test.ts` y `packages/*/src/**/*.test.ts`) | Vitest | ✅ Fase 8 |
+| Integración API→service→MongoDB | `tests/integration/` | Vitest + Supertest + mongodb-memory-server | ✅ Fase 8 |
 | E2E | `tests/e2e/` | API: Vitest+Supertest; web: Playwright; móvil: Detox | ⏳ Fase 17 |
 
-## Cobertura actual (Fase 7 — 137 pruebas: 67 unitarias + 70 de integración)
+## Cobertura actual (Fase 8 — 193 pruebas: 97 unitarias + 96 de integración)
 
 - Hash/verificación de contraseñas (scrypt), incluidos hashes malformados.
 - Firma/verificación de JWT: expirado, manipulado, `typ` incorrecto, incompleto.
@@ -49,6 +49,17 @@ npm run build      # compilación de producción
   duplicados (`ROLE_NAME_IN_USE`), permisos fuera de catálogo (400),
   `name` inmutable en edición, borrado protegido (`SYSTEM_ROLE`, `ROLE_IN_USE`),
   aislamiento multiempresa (404), catálogo `/permissions`.
+- Categorías: RBAC 401/403 (y positivo con rol catálogo), aislamiento
+  multiempresa (404), `productCount` real, `search`/`status`/paginación,
+  `sort` no permitido (400), creación 201 y nombre duplicado (409 `NAME_IN_USE`),
+  edición con renombre a sí mismo, alta/baja por `isActive` reflejada en el
+  filtro `status`.
+- Productos: RBAC 401/403 (lectura con rol catálogo; escritura sin permiso),
+  listado con `categoryName` y sin secretos, búsqueda por nombre/SKU con regex
+  hostiles, filtros `categoryId`/`status`, SKU normalizado a mayúsculas y
+  duplicado (409 `SKU_IN_USE`), categoría ajena o inexistente
+  (400 `CATEGORY_NOT_FOUND`), precios negativos / tasa >100 / unidad vacía /
+  SKU inválido (400), edición de precios+impuestos+estado, aislamiento (404).
 
 ## Casos negativos obligatorios por módulo nuevo
 

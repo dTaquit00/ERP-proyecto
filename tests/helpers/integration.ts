@@ -6,6 +6,7 @@ import { CompanyModel, type CompanyDocument } from '../../apps/api/src/modules/c
 import { RoleModel, type RoleDocument } from '../../apps/api/src/modules/roles/roles.model.js';
 import { rolesService } from '../../apps/api/src/modules/roles/roles.service.js';
 import { UserModel, type UserDocument } from '../../apps/api/src/modules/users/users.model.js';
+import { CategoryModel, type CategoryDocument } from '../../apps/api/src/modules/categories/categories.model.js';
 import { hashPassword } from '../../apps/api/src/shared/security/password.js';
 
 export const TEST_PASSWORD = 'Passw0rd123';
@@ -20,11 +21,20 @@ export interface TestContext {
   writerRole: RoleDocument;
   /** Rol mínimo sin permisos de usuarios — para pruebas RBAC negativas. */
   limitedRole: RoleDocument;
+  /** Rol catálogo: categories.* + products.read (sin products.write) — Fase 8. */
+  catalogRole: RoleDocument;
   admin: UserDocument;
   inactiveUser: UserDocument;
   writerUser: UserDocument;
   limitedUser: UserDocument;
+  catalogUser: UserDocument;
   otherCompanyAdmin: UserDocument;
+  /** Categoría activa base de la empresa (para pruebas de productos). */
+  baseCategory: CategoryDocument;
+  /** Categoría desactivada (filtro `status=inactive`). */
+  inactiveCategory: CategoryDocument;
+  /** Categoría de OTRA empresa (aislamiento / CATEGORY_NOT_FOUND). */
+  otherCompanyCategory: CategoryDocument;
 }
 
 /** Levanta MongoDB en memoria + la app Express y siembra datos base. */
@@ -58,6 +68,14 @@ export async function setupTestContext(): Promise<TestContext> {
     name: 'basico',
     displayName: 'Básico',
     permissions: ['dashboard.read'],
+    isSystem: false,
+  });
+
+  const catalogRole = await RoleModel.create({
+    companyId: company.id,
+    name: 'catalogo',
+    displayName: 'Catálogo',
+    permissions: ['categories.read', 'categories.write', 'products.read'],
     isSystem: false,
   });
 
@@ -101,6 +119,16 @@ export async function setupTestContext(): Promise<TestContext> {
     isActive: true,
   });
 
+  const catalogUser = await UserModel.create({
+    companyId: company.id,
+    email: 'catalog@test.local',
+    passwordHash: await hashPassword(TEST_PASSWORD),
+    firstName: 'Cata',
+    lastName: 'Logo',
+    roleId: catalogRole.id,
+    isActive: true,
+  });
+
   const otherCompanyAdmin = await UserModel.create({
     companyId: otherCompany.id,
     email: 'admin@other.local',
@@ -108,6 +136,24 @@ export async function setupTestContext(): Promise<TestContext> {
     firstName: 'Bob',
     lastName: 'Otro',
     roleId: otherAdminRole.id,
+    isActive: true,
+  });
+
+  // Categorías base (Fase 8): una activa, una desactivada y una ajena a otra empresa.
+  const baseCategory = await CategoryModel.create({
+    companyId: company.id,
+    name: 'General',
+    description: 'Categoría base de pruebas',
+    isActive: true,
+  });
+  const inactiveCategory = await CategoryModel.create({
+    companyId: company.id,
+    name: 'Obsoleta',
+    isActive: false,
+  });
+  const otherCompanyCategory = await CategoryModel.create({
+    companyId: otherCompany.id,
+    name: 'Ajena',
     isActive: true,
   });
 
@@ -119,11 +165,16 @@ export async function setupTestContext(): Promise<TestContext> {
     adminRole,
     writerRole,
     limitedRole,
+    catalogRole,
     admin,
     inactiveUser,
     writerUser,
     limitedUser,
+    catalogUser,
     otherCompanyAdmin,
+    baseCategory,
+    inactiveCategory,
+    otherCompanyCategory,
   };
 }
 

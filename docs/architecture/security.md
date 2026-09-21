@@ -1,8 +1,8 @@
 # Seguridad
 
-Estado: Fase 7 (autenticación + usuarios/roles). Marco completo por fase en `docs/qa/quality-checklist.md`.
+Estado: Fase 8 (autenticación + usuarios/roles + catálogo categorías/productos). Marco completo por fase en `docs/qa/quality-checklist.md`.
 
-## Implementado (Fase 4–7)
+## Implementado (Fase 4–8)
 
 ### Autenticación
 - Contraseñas con **scrypt** (`N=16384, r=8, p=1`, sal aleatoria de 16 bytes,
@@ -33,6 +33,10 @@ Estado: Fase 7 (autenticación + usuarios/roles). Marco completo por fase en `do
 - Toda la entrada pasa por Zod (`parseOrThrow`) → 400 `VALIDATION_ERROR` con
   `details[]` por campo. Sin datos sanitizados por regex peligrosos; Mongoose evita
   la inyección NoSQL (los operadores `$` no llegan a las consultas como objetos).
+- La búsqueda de listados escapa la regex de la entrada (`search` hostil →
+  resultados vacíos, nunca errores ni patrones ampliados) y `sort` pasa por una
+  whitelist Zod (anti sort-injection). Las claves desconocidas del body se
+  descartan (anti mass assignment).
 - Manejador global: `{error:{code,message}}`, sin stack traces en producción
   (solo 5xx en desarrollo). Cuerpo JSON limitado a 1 MB.
 

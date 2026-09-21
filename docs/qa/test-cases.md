@@ -87,6 +87,42 @@ Formato: `TC-<módulo>-<número>` · Estado: ✅ aprobado · ⏳ pendiente · �
 | TC-ROLE-016 | `DELETE` de rol libre (y sin permisos) | 403 para rol sin `roles.write`; 200 `{id,deleted:true}`; luego GET → 404 | ✅ |
 | TC-ROLE-017 | `DELETE` de rol de otra empresa | 404 | ✅ |
 
+## M06 — Categorías (integración: `tests/integration/categories.integration.test.ts`)
+
+| ID | Descripción | Resultado esperado | Estado |
+|---|---|---|---|
+| TC-CAT-001 | `GET /categories` sin token / sin `categories.read` | 401 `MISSING_TOKEN` / 403 `INSUFFICIENT_PERMISSIONS` | ✅ |
+| TC-CAT-002 | Listado con rol catálogo (RBAC positivo) | 200, solo categorías de la empresa, con `productCount`, sin datos ajenos ni `passwordHash` | ✅ |
+| TC-CAT-003 | Filtro por estado | `status=inactive` → solo `isActive:false` (incluye la categoría base desactivada) | ✅ |
+| TC-CAT-004 | Búsqueda por nombre/descripción sin inyección de regex | `search=Obsoleta` filtra; `search=(((` → 200 (regex escapada) | ✅ |
+| TC-CAT-005 | Paginación y campos no permitidos | `page=2&limit=1` → `meta` coherente; `sort=passwordHash` → 400; `limit=5000` → 400 | ✅ |
+| TC-CAT-006 | Detalle con `productCount` real | 200, `productCount ≥ 1` (producto creado en la propia suite) | ✅ |
+| TC-CAT-007 | Detalle otra empresa / `:id` inválido / inexistente | 404 / 400 `VALIDATION_ERROR` / 404 | ✅ |
+| TC-CAT-008 | Creación válida | 201, nombre recortado, `isActive:true`, `productCount:0`, `companyId` propio | ✅ |
+| TC-CAT-009 | Nombre duplicado en la empresa | 409 `NAME_IN_USE` | ✅ |
+| TC-CAT-010 | Payload inválido / sin permiso / sin token | 400 con `details[]` / 403 / 401 | ✅ |
+| TC-CAT-011 | `PATCH` nombre+descripción y `isActive:false` | 200; el filtro `status=inactive` refleja el cambio; reactivación | ✅ |
+| TC-CAT-012 | `PATCH` vacío / duplicado / renombrarse a sí mismo / sin permisos / otra empresa | 400 / 409 `NAME_IN_USE` / 200 / 403 / 404 | ✅ |
+
+## M07 — Productos (integración: `tests/integration/products.integration.test.ts`)
+
+| ID | Descripción | Resultado esperado | Estado |
+|---|---|---|---|
+| TC-PROD-001 | `GET /products` sin token / sin `products.read` | 401 / 403 | ✅ |
+| TC-PROD-002 | Listado con rol catálogo (RBAC positivo) | 200, solo productos propios, con `categoryName`, sin `FOREIGN-1`, sin `passwordHash`/`tokenHash` | ✅ |
+| TC-PROD-003 | Paginación consistente | `meta` calculada en backend coherente con `total` real | ✅ |
+| TC-PROD-004 | Búsqueda por nombre/SKU con regex hostiles | `search=SKU-BASE` filtra por SKU; `search=[[` → 200 | ✅ |
+| TC-PROD-005 | Filtros `categoryId`/`status` y campos no permitidos | resultados coherentes; `sort=passwordHash` → 400; `limit=5000` → 400 | ✅ |
+| TC-PROD-006 | Detalle con precios e impuestos | 200, `purchasePrice`/`salePrice`/`categoryName` correctos | ✅ |
+| TC-PROD-007 | Detalle otra empresa / `:id` inválido / inexistente | 404 / 400 / 404 | ✅ |
+| TC-PROD-008 | Creación válida | 201, SKU normalizado a mayúsculas, `categoryName` resuelto, impuestos y `companyId` correctos | ✅ |
+| TC-PROD-009 | SKU duplicado (distinta caja) en la empresa | 409 `SKU_IN_USE` | ✅ |
+| TC-PROD-010 | Categoría de otra empresa / inexistente | 400 `CATEGORY_NOT_FOUND` en ambos | ✅ |
+| TC-PROD-011 | Precio negativo / tasa >100 / unidad vacía / SKU con espacios | 400 `VALIDATION_ERROR` con `details[]` | ✅ |
+| TC-PROD-012 | Crear sin `products.write` y sin token | 403 `INSUFFICIENT_PERMISSIONS` / 401 | ✅ |
+| TC-PROD-013 | `PATCH` nombre+precio+impuestos y `isActive:false` | 200; el filtro `status=inactive` incluye el producto | ✅ |
+| TC-PROD-014 | `PATCH` vacío / SKU duplicado / categoría ajena / sin permisos / otra empresa | 400 / 409 `SKU_IN_USE` / 400 `CATEGORY_NOT_FOUND` / 403 / 404 | ✅ |
+
 ## Unitarias
 
 | ID | Archivo | Casos | Estado |
@@ -102,7 +138,11 @@ Formato: `TC-<módulo>-<número>` · Estado: ✅ aprobado · ⏳ pendiente · �
 | TC-UNIT-009 | `users.repository.test.ts` | `buildUserFilter` (scope `companyId`, status, roleId, búsqueda), `escapeRegExp` | ✅ |
 | TC-UNIT-010 | `users.service.test.ts` | `toUserSummary` sin fugas de hash, fallback de rol, fechas nulas | ✅ |
 | TC-UNIT-011 | `user.schema.test.ts` / `role.schema.test.ts` | schemas de usuario y rol: válidos, inválidos, defaults, refinamientos | ✅ |
+| TC-UNIT-012 | `category.schema.test.ts` / `product.schema.test.ts` | schemas de categoría y producto: SKU normalizado a mayúsculas, impuestos 0–100, precios ≥ 0, imagen URL, defaults, sort/limit, claves desconocidas descartadas | ✅ |
+| TC-UNIT-013 | `categories.repository.test.ts` | `buildCategoryFilter`: scope `companyId`, status, búsqueda escapada, regex hostil | ✅ |
+| TC-UNIT-014 | `products.repository.test.ts` | `buildProductFilter`: scope `companyId`, categoryId, status, búsqueda multi-campo escapada | ✅ |
+| TC-UNIT-015 | `products.service.test.ts` | `toProductSummary`: nombre de categoría, fallback `sin-categoría`, campos opcionales nulos, sin fugas de hash | ✅ |
 
 ## Pendientes por fase
 
-⏳ Fase 8+: TC-PROD-*, TC-INV-*, TC-SALE-*, TC-PUR-*… (ver test-plan.md)
+⏳ Fase 9+: TC-INV-*, TC-SALE-*, TC-PUR-*… (ver test-plan.md)

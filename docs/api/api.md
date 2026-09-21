@@ -28,11 +28,11 @@ Error:
 |---|---|
 | 200 | Éxito |
 | 201 | Recurso creado |
-| 400 | Validación (`VALIDATION_ERROR`) o regla (`INVALID_RESET_TOKEN`, `ROLE_NOT_FOUND`, `SELF_DEACTIVATE`) |
+| 400 | Validación (`VALIDATION_ERROR`) o regla (`INVALID_RESET_TOKEN`, `ROLE_NOT_FOUND`, `SELF_DEACTIVATE`, `CATEGORY_NOT_FOUND`) |
 | 401 | No autenticado (`MISSING_TOKEN`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `INVALID_CREDENTIALS`, `SESSION_INVALID`, `REFRESH_TOKEN_MISSING`) |
 | 403 | Sin permisos (`INSUFFICIENT_PERMISSIONS`, `ACCOUNT_DISABLED`, `CURRENT_PASSWORD_INVALID`) |
 | 404 | `NOT_FOUND` (también recurso de otra empresa: no se filtra su existencia) |
-| 409 | `CONFLICT` / `DUPLICATE` / `EMAIL_IN_USE` / `ROLE_NAME_IN_USE` / `SYSTEM_ROLE` / `ROLE_IN_USE` / `LAST_ACTIVE_ADMIN` |
+| 409 | `CONFLICT` / `DUPLICATE` / `EMAIL_IN_USE` / `ROLE_NAME_IN_USE` / `SYSTEM_ROLE` / `ROLE_IN_USE` / `LAST_ACTIVE_ADMIN` / `NAME_IN_USE` / `SKU_IN_USE` |
 | 422 | Regla de negocio no procesable (reservado) |
 | 429 | `RATE_LIMITED` |
 | 500 | `INTERNAL_ERROR` (mensaje genérico; detalle solo en log) |
@@ -137,12 +137,56 @@ Todos exigen `Authorization: Bearer` y RBAC en backend. Scope: siempre la empres
 
 ---
 
+## M06 — Categorías
+
+Todos exigen `Authorization: Bearer` y RBAC en backend. Scope: siempre la empresa del token.
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/categories` | `categories.read` | Listado paginado `{items, meta}` con `productCount`. Query: `page, limit, search(nombre/descripción), status(active\|inactive), sort(name\|createdAt\|updatedAt), order(asc\|desc)`. |
+| GET | `/categories/:id` | `categories.read` | Detalle con `productCount`. Otra empresa o inexistente → 404. |
+| POST | `/categories` | `categories.write` | `{name(2–80), description?}` → 201. 409 `NAME_IN_USE` (nombre único por empresa). |
+| PATCH | `/categories/:id` | `categories.write` | Edita `name/description/isActive`. Body no vacío (400). Renombrarse a sí mismo no es duplicado. |
+
+> Sin borrado físico: la baja es `PATCH {"isActive": false}` (M06 pide "desactivar").
+> `productCount` se calcula agregando `products` (una sola consulta por petición).
+
+---
+
+## M07 — Productos
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/products` | `products.read` | Listado paginado con `categoryName`. Query: `page, limit, search(nombre/sku/código/barras), categoryId, status(active\|inactive), sort(sku\|name\|purchasePrice\|salePrice\|createdAt\|updatedAt), order`. |
+| GET | `/products/:id` | `products.read` | Detalle con precios e impuestos. Otra empresa → 404. |
+| POST | `/products` | `products.write` | `{sku, name, categoryId, purchasePrice, salePrice, unit, code?, description?, taxes?, isActive?, image?, barcode?}` → 201. |
+| PATCH | `/products/:id` | `products.write` | Edita cualquier campo permitido; `sku` y `categoryId` se revalidan. Body no vacío (400). |
+
+Reglas de negocio:
+
+- **SKU único por empresa**, normalizado a mayúsculas → 409 `SKU_IN_USE`.
+- `categoryId` debe existir **en la misma empresa** → 400 `CATEGORY_NOT_FOUND`.
+- Precios ≥ 0; `taxes[]` con `rate` 0–100; `image` debe ser URL.
+- Estado: `PATCH {"isActive": false}` (sin `DELETE`).
+
+```http
+POST /api/v1/products
+{ "sku": "sku-001", "name": "Teclado mecánico", "categoryId": "665f...",
+  "purchasePrice": 100.5, "salePrice": 150, "unit": "pza",
+  "taxes": [{ "name": "IVA", "rate": 16 }] }
+```
+
+```json
+{ "data": { "id": "6660...", "sku": "SKU-001", "categoryName": "General",
+  "purchasePrice": 100.5, "salePrice": 150, "taxes": [{ "name": "IVA", "rate": 16 }],
+  "isActive": true } }
+```
+
+---
+
 ## Endpoints previstos (por fase)
 
 ```
-GET|POST            /products             (Fase 8)
-GET|PATCH|DELETE    /products/:id
-GET|POST            /categories           (Fase 8)
 GET|POST            /customers            (Fase 10)
 GET|POST            /suppliers            (Fase 10)
 GET|POST            /warehouses           (Fase 9)

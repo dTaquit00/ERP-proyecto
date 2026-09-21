@@ -16,8 +16,8 @@ debe pasar la "Definición de terminado" (ver `docs/qa/quality-checklist.md`).
 | M03 | Roles y permisos | RBAC; roles: administrador, gerente, vendedor, almacén, compras, finanzas, auditor; el **backend** verifica permisos | 7 ✅ |
 | M04 | Empresas | nombre, razón social, identificación fiscal, teléfono, correo, dirección, estado, configuración | 13 |
 | M05 | Sucursales | Crear, editar, desactivar, consultar | 13 |
-| M06 | Categorías | Crear, editar, desactivar, consultar | 8 |
-| M07 | Productos | código, SKU (único por empresa), nombre, descripción, categoría, precio compra/venta, impuestos configurables, unidad, estado, imagen, código de barras; validaciones | 8 |
+| M06 | Categorías | Crear, editar, desactivar, consultar | 8 ✅ |
+| M07 | Productos | código, SKU (único por empresa), nombre, descripción, categoría, precio compra/venta, impuestos configurables, unidad, estado, imagen, código de barras; validaciones | 8 ✅ |
 | M08 | Clientes | Registrar, editar, consultar, desactivar, historial de compras | 10 |
 | M09 | Proveedores | Registrar, editar, consultar, desactivar, historial de compras | 10 |
 | M10 | Almacenes | Crear, asociar a sucursal, activar/desactivar, consultar inventario | 9 |
@@ -35,8 +35,8 @@ debe pasar la "Definición de terminado" (ver `docs/qa/quality-checklist.md`).
 4. API base ✅
 5. MongoDB Atlas ✅
 6. Autenticación ✅
-7. Usuarios y permisos
-8. Productos y categorías
+7. Usuarios y permisos ✅
+8. Productos y categorías ✅
 9. Inventario
 10. Clientes y proveedores
 11. Ventas

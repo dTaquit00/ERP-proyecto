@@ -58,6 +58,23 @@ Definición de "terminado" aplicada por fase.
 - [x] Lint correcto · TypeScript sin errores · 137/137 tests · `npm run build` OK
 - [x] Documentación actualizada (api, test-cases, quality-checklist, requirements, architecture, README)
 
+## Fase 8 — Categorías (M06) y Productos (M07)
+
+- [x] Módulo completo `categories/`: model · repository · service · controller · routes · types · tests
+- [x] Módulo completo `products/`: misma estructura
+- [x] Endpoints: `GET/POST /categories`, `GET|PATCH /categories/:id`, `GET/POST /products`, `GET|PATCH /products/:id`
+- [x] RBAC verificado en backend (`categories.read/write`, `products.read/write`) con negativas 401/403 y positivas con rol catálogo
+- [x] Aislamiento multiempresa: categorías/productos de otra empresa → 404 (sin filtrar existencia)
+- [x] Reglas de negocio: `NAME_IN_USE` (nombre único por empresa), `SKU_IN_USE` (SKU único por empresa, normalizado a mayúsculas), `CATEGORY_NOT_FOUND` (categoría de la misma empresa)
+- [x] Campos de producto completos: código, SKU, nombre, descripción, categoría, precio compra/venta, impuestos configurables (tasa 0–100), unidad, estado, imagen (URL), código de barras
+- [x] Sin borrado físico: baja lógica vía `PATCH {isActive:false}` (spec M06: "desactivar")
+- [x] Listado: paginación, `search` (regex-escapado sobre nombre/SKU/código/barras), `status`, `categoryId`, `sort` con whitelist anti sort-injection
+- [x] `productCount` real por categoría (una agregación por petición)
+- [x] Nunca se expone `passwordHash` ni `tokenHash` en respuestas (verificado por test)
+- [x] Pruebas: unitarias (schemas de categoría/producto, `buildCategoryFilter`, `buildProductFilter`, `toProductSummary`) + integración (12 categorías + 14 productos, con negativos)
+- [x] Lint correcto · TypeScript sin errores · 193/193 tests · `npm run build` OK
+- [x] Documentación actualizada (api, test-cases, test-plan, quality-checklist, requirements, architecture, database, security, README)
+
 ## Pendiente para fases siguientes
 
 - [ ] Auditoría (`audit_logs`) al confirmar operaciones empresariales — Fase 15

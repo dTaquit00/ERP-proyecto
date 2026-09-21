@@ -1,6 +1,10 @@
 import { Types, type FilterQuery } from 'mongoose';
 import type { ListUsersQueryInput } from '@erp/validation';
 import { UserModel, type UserDocument, type UserSchemaType } from './users.model.js';
+import { escapeRegExp } from '../../shared/utils/regex.js';
+
+// Reexportado para mantener la API pública del módulo (su unit-test lo importa de aquí).
+export { escapeRegExp } from '../../shared/utils/regex.js';
 
 export interface UserCreateInput {
   companyId: string;
@@ -19,13 +23,8 @@ export interface UserFieldChanges {
   roleId?: string;
 }
 
-/**
- * Escape de metacaracteres de regex: una búsqueda del usuario nunca debe
- * interpretarse como patrón (protección contra inyección de regex).
- */
-export function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+/** Escapa metacaracteres de regex — implementación en `shared/utils/regex.js`
+ * (importada aquí para no duplicar lógica; el export público se mantiene). */
 
 /**
  * Construye el filtro de listado. El scope multiempresa (`companyId`) SIEMPRE

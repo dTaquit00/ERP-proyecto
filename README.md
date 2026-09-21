@@ -14,10 +14,11 @@ Construido con **TypeScript estricto** en todo el stack:
 | Validación | Zod (schemas compartidos) |
 | Pruebas | Vitest + Supertest + mongodb-memory-server |
 
-> Estado actual: **Fase 7 completada** — monorepo, API base, seguridad, MongoDB,
-> autenticación (M01), usuarios (M02) y roles/permisos (M03), con RBAC verificado
-> en backend y pruebas unitarias e de integración. Los módulos restantes
-> se construyen por fases según `docs/requirements/requirements.md`.
+> Estado actual: **Fase 8 completada** — monorepo, API base, seguridad, MongoDB,
+> autenticación (M01), usuarios (M02), roles/permisos (M03), categorías (M06) y
+> productos (M07), con RBAC verificado en backend y pruebas unitarias e de
+> integración. Los módulos restantes se construyen por fases según
+> `docs/requirements/requirements.md`.
 
 ---
 
@@ -148,7 +149,7 @@ Base: `/api/v1`. Convención completa en `docs/api/api.md`.
 
 Éxito: `{ "data": ... }` · Error: `{ "error": { "code", "message", "details?" } }`
 
-Endpoints (Fases 6–7):
+Endpoints (Fases 6–8):
 
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -166,12 +167,16 @@ Endpoints (Fases 6–7):
 | GET, POST | `/roles` | Roles con `userCount` / creación (`roles.read`/`roles.write`) |
 | GET, PATCH, DELETE | `/roles/:id` | Detalle / edición / borrado protegido (`SYSTEM_ROLE`, `ROLE_IN_USE`) |
 | GET | `/permissions` | Catálogo de permisos para el editor de roles |
+| GET, POST | `/categories` | Categorías con `productCount` / creación (`categories.read`/`categories.write`) |
+| GET, PATCH | `/categories/:id` | Detalle / edición y alta-baja lógica (`isActive`); 409 `NAME_IN_USE` |
+| GET, POST | `/products` | Catálogo con `categoryName` y filtros (`products.read`/`products.write`) |
+| GET, PATCH | `/products/:id` | Detalle / edición; SKU único por empresa (409 `SKU_IN_USE`) |
 | GET | `/health` | Estado del servidor y de MongoDB |
 
 ## Base de datos
 
 Colecciones: `users`, `roles`, `companies`, `sessions`, `password_reset_tokens`
-(fase 6) y, por fase, `branches`, `categories`, `products`, `customers`,
+(fase 6) y `categories`, `products` (fase 8); por fase, `branches`, `customers`,
 `suppliers`, `warehouses`, `stock_balances`, `inventory_movements`, `sales`,
 `purchases`, `cash_movements`, `audit_logs`. Detalle y justificación de cada
 relación en `docs/architecture/database.md`.

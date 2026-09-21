@@ -95,6 +95,7 @@ Si alguna operación falla, no quedan datos parciales.
 | 5 | Conexión MongoDB + repositorios + índices | ✅ |
 | 6 | M01 Autenticación (login/refresh/logout/reset/cambio) | ✅ |
 | 7 | M02 Usuarios + M03 Roles/permisos (CRUD + RBAC completo) | ✅ |
-| 8–15 | Productos, inventario, clientes/proveedores, ventas, compras, dashboard, reportes, auditoría | ⏳ |
+| 8 | M06 Categorías + M07 Productos (catálogo con SKU único e impuestos configurables) | ✅ |
+| 9–15 | Inventario, clientes/proveedores, ventas, compras, dashboard, reportes, auditoría | ⏳ |
 | 16 | Frontend web + móvil | ⏳ |
 | 17–20 | E2E, seguridad, optimización, docs, producción | ⏳ |

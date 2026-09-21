@@ -11,7 +11,7 @@
 4. **El stock nunca se modifica en silencio**: cada cambio genera un
    `inventory_movements`.
 
-## Colecciones — Fase 6 (implementadas)
+## Colecciones — Fases 6–8 (implementadas)
 
 ### companies
 | Campo | Tipo | Notas |
@@ -62,13 +62,40 @@
 ### password_reset_tokens
 `userId`, `tokenHash` (único), `expiresAt` (TTL), `usedAt` (un solo uso).
 
+### categories (M06)
+| Campo | Tipo | Notas |
+|---|---|---|
+| companyId | ObjectId → companies | |
+| name | string | único por empresa |
+| description | string? | |
+| isActive | boolean | baja lógica (M06: "desactivar"; no hay borrado físico) |
+| createdAt / updatedAt | Date | timestamps |
+
+Índice único: `{companyId, name}`; índice `{companyId, isActive}`.
+
+### products (M07)
+| Campo | Tipo | Notas |
+|---|---|---|
+| companyId | ObjectId → companies | |
+| code | string? | código interno |
+| sku | string | normalizado en mayúsculas; **único por empresa** |
+| name | string | |
+| description | string? | |
+| categoryId | ObjectId → categories | debe pertenecer a la misma empresa (validado en service) |
+| purchasePrice, salePrice | number | ≥ 0; los totales los calcula el backend (Fase 11) |
+| taxes | `[{ name, rate }]` | impuestos configurables; rate 0–100; sin `_id` |
+| unit | string | pza, kg, lt… |
+| isActive | boolean | estado del producto |
+| image | string? (URL) | |
+| barcode | string? | |
+
+Índices: único `{companyId, sku}`; `{companyId, categoryId}`; `{companyId, isActive}`.
+
 ## Colecciones — fases posteriores
 
 | Colección | Fase | Notas clave |
 |---|---|---|
 | branches | 13 | sucursales; `{companyId, code}` único |
-| categories | 8 | jerarquía padre/hijo opcional (referencia) |
-| products | 8 | `{companyId, sku}` único; precios, impuestos, unidad, imagen, barcode |
 | customers / suppliers | 10 | referenciados por ventas/compras |
 | warehouses | 9 | referencian `branchId` |
 | stock_balances | 9 | `{companyId, warehouseId, productId}` único → consulta rápida de existencias |
