@@ -91,15 +91,15 @@
 
 Índices: único `{companyId, sku}`; `{companyId, categoryId}`; `{companyId, isActive}`.
 
-## Colecciones — fases posteriores
+## Colecciones — por fase
 
 | Colección | Fase | Notas clave |
 |---|---|---|
 | branches | 13 | sucursales; `{companyId, code}` único |
-| customers / suppliers | 10 | referenciados por ventas/compras |
-| warehouses | 9 | referencian `branchId` |
-| stock_balances | 9 | `{companyId, warehouseId, productId}` único → consulta rápida de existencias |
-| inventory_movements | 9 | tipo `IN OUT ADJUSTMENT TRANSFER RETURN`; documento inmutable con stock resultante |
+| customers / suppliers | 10 ✅ | `address` subdocumento `{_id:false}` reemplazado completo en PATCH; **sin unicidad** de nombre/correo/DNI/RUC; opcionales en blanco → `null`; referenciados por ventas/compras (Fase 11–12) |
+| warehouses | 9 ✅ | referencian `branchId` |
+| stock_balances | 9 ✅ | `{companyId, warehouseId, productId}` único → consulta rápida de existencias |
+| inventory_movements | 9 ✅ | tipo `IN OUT ADJUSTMENT TRANSFER RETURN`; documento inmutable con stock resultante |
 | sales | 11 | cabecera referencial + `items[]` embebidos (snapshot de precio/descuento) |
 | purchases | 12 | ítems embebidos; recepción genera movimientos IN |
 | cash_movements | futuro | finanzas |

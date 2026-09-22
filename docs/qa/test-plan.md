@@ -16,11 +16,11 @@ npm run build      # compilación de producción
 
 | Nivel | Ubicación | Herramienta | Estado |
 |---|---|---|---|
-| Unitarias | junto al código (`apps/api/src/**/*.test.ts` y `packages/*/src/**/*.test.ts`) | Vitest | ✅ Fase 9 |
-| Integración API→service→MongoDB | `tests/integration/` | Vitest + Supertest + mongodb-memory-server | ✅ Fase 9 |
+| Unitarias | junto al código (`apps/api/src/**/*.test.ts` y `packages/*/src/**/*.test.ts`) | Vitest | ✅ Fase 10 |
+| Integración API→service→MongoDB | `tests/integration/` | Vitest + Supertest + mongodb-memory-server | ✅ Fase 10 |
 | E2E | `tests/e2e/` | API: Vitest+Supertest; web: Playwright; móvil: Detox | ⏳ Fase 17 |
 
-## Cobertura actual (Fase 9 — 255 pruebas: 128 unitarias + 127 de integración)
+## Cobertura actual (Fase 10 — 316 pruebas: 161 unitarias + 155 de integración)
 
 - Hash/verificación de contraseñas (scrypt), incluidos hashes malformados.
 - Firma/verificación de JWT: expirado, manipulado, `typ` incorrecto, incompleto.
@@ -75,6 +75,17 @@ npm run build      # compilación de producción
   filtros `type`/`warehouseId`/`availability(low|in_stock|out_of_stock)`,
   `minStock` con `lowStock` derivado, `sort` no permitido (400),
   inmovilidad de movimientos (sin PATCH/DELETE) y aislamiento (404).
+- Clientes: RBAC 401/403 (lectura y escritura con rol mínimo `comercial`),
+  aislamiento multiempresa (404), sin `passwordHash`, paginación/búsqueda con
+  regex hostiles, filtros `status`/`sort` (campo no permitido y `limit>100` → 400),
+  creación 201 con correo normalizado y cliente mínimo (`''` = campo ausente),
+  edición con reemplazo completo de `address`, limpieza de opcionales
+  (`''`/solo espacios → `null` persistido y releído), cuerpo PATCH vacío (400),
+  sin DELETE (baja por `PATCH {isActive:false}` → DELETE responde 404) y
+  **sin unicidad** de nombre/correo (decisión de negocio).
+- Proveedores: la misma batería sobre M09 con rol propio `proveeduria`
+  (nombre distinto a los 7 roles del sistema), campos `contactName`/`ruc`,
+  duplicados permitidos (201) y limpieza `email`/`ruc`/`notes` → `null`.
 
 ## Casos negativos obligatorios por módulo nuevo
 

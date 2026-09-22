@@ -184,6 +184,39 @@ POST /api/v1/products
 
 ---
 
+## M08 — Clientes
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/customers` | `customers.read` | Listado paginado. Query: `page, limit, search(nombre/correo), status(active\|inactive), sort(name\|email\|createdAt\|updatedAt), order`. |
+| GET | `/customers/:id` | `customers.read` | Detalle con `address` (subdocumento). Otra empresa → 404. |
+| POST | `/customers` | `customers.write` | `{name(2–120), email?, phone?, dni?, address?{street?,city?,state?,zipCode?}, notes?, isActive?}` → 201. |
+| PATCH | `/customers/:id` | `customers.write` | Edita campos individuales; body sin campos → 400. Baja: `{"isActive": false}`. |
+
+> **Sin unicidad** de nombre/correo/DNI (decisión de negocio: se admiten clientes repetidos).
+> **Sin DELETE**: la baja es `PATCH {"isActive": false}` (DELETE → 404, probado).
+> **Limpieza de opcionales (diseño B)**: en PATCH, `''`, solo espacios o `null`
+> significan "borrar" y se persisten como `null` (`undefined` = no tocar el campo).
+> En POST lo en blanco se trata como campo ausente.
+> `address` en PATCH se **reemplaza completa** (envía todos los campos que quieras conservar).
+
+---
+
+## M09 — Proveedores
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/suppliers` | `suppliers.read` | Listado paginado. Query: `page, limit, search(nombre/contacto/ruc), status(active\|inactive), sort(name\|contactName\|createdAt\|updatedAt), order`. |
+| GET | `/suppliers/:id` | `suppliers.read` | Detalle con `address`. Otra empresa → 404. |
+| POST | `/suppliers` | `suppliers.write` | `{name(2–120), contactName?, email?, phone?, ruc?, address?, notes?, isActive?}` → 201. |
+| PATCH | `/suppliers/:id` | `suppliers.write` | Edita campos individuales; body sin campos → 400. Baja: `{"isActive": false}`. |
+
+> Mismas reglas que M08: sin unicidad (nombre/RUC/correo repetidos → 201), sin
+> DELETE, limpieza `''` → `null` en PATCH, `address` reemplazada completa.
+> Comparte `optionalText`/`address` con `customer.schema.ts` (fuente única).
+
+---
+
 ## M10 — Almacenes
 
 | Método | Ruta | Permiso | Descripción |
@@ -238,8 +271,6 @@ POST /api/v1/inventory/movements
 ## Endpoints previstos (por fase)
 
 ```
-GET|POST            /customers            (Fase 10)
-GET|POST            /suppliers            (Fase 10)
 GET|POST            /sales                (Fase 11)
 POST                /sales/:id/confirm|cancel|return
 GET|POST            /purchases            (Fase 12)

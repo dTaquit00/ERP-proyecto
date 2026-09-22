@@ -10,3 +10,5 @@ export * from './category.schema.js';
 export * from './product.schema.js';
 export * from './warehouse.schema.js';
 export * from './inventory.schema.js';
+export * from './customer.schema.js';
+export * from './supplier.schema.js';

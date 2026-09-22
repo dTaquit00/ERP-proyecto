@@ -123,6 +123,44 @@ Formato: `TC-<módulo>-<número>` · Estado: ✅ aprobado · ⏳ pendiente · �
 | TC-PROD-013 | `PATCH` nombre+precio+impuestos y `isActive:false` | 200; el filtro `status=inactive` incluye el producto | ✅ |
 | TC-PROD-014 | `PATCH` vacío / SKU duplicado / categoría ajena / sin permisos / otra empresa | 400 / 409 `SKU_IN_USE` / 400 `CATEGORY_NOT_FOUND` / 403 / 404 | ✅ |
 
+## M08 — Clientes (integración: `tests/integration/customers.integration.test.ts`)
+
+| ID | Descripción | Resultado esperado | Estado |
+|---|---|---|---|
+| TC-CUS-001 | `GET /customers` sin token / sin `customers.read` | 401 `MISSING_TOKEN` / 403 `INSUFFICIENT_PERMISSIONS` | ✅ |
+| TC-CUS-002 | Listado con rol `comercial` (RBAC positivo) | 200, solo clientes propios con `address`, sin datos ajenos ni `passwordHash` | ✅ |
+| TC-CUS-003 | Paginación consistente | `meta` calculada en backend coherente con `total` real | ✅ |
+| TC-CUS-004 | Búsqueda por nombre/correo con regex hostiles | `search` filtra; `(((` → 200 (regex escapada) | ✅ |
+| TC-CUS-005 | Filtro `status` y campos no permitidos | `status=inactive` filtra; `sort=passwordHash` → 400; `limit=5000` → 400 | ✅ |
+| TC-CUS-006 | Detalle con dirección completa | 200 con `address` y campos opcionales | ✅ |
+| TC-CUS-007 | Otra empresa / `:id` inválido / inexistente | 404 / 400 `VALIDATION_ERROR` / 404 | ✅ |
+| TC-CUS-008 | Creación completa | 201, correo normalizado a minúsculas, `address`, `isActive:true`, `companyId` propio | ✅ |
+| TC-CUS-009 | Cliente mínimo con `''` en opcionales | 201; `email`/`phone`/`address` en la respuesta → `null` (ausentes) | ✅ |
+| TC-CUS-010 | Payload inválido / sin `customers.write` / sin token | 400 con `details[]` / 403 / 401 | ✅ |
+| TC-CUS-011 | `PATCH` nombre + `address` (reemplazo completo) + estado | 200; campos no enviados intactos; filtro `status` refleja la baja y reactivación | ✅ |
+| TC-CUS-012 | `PATCH` limpia opcionales con `''`/solo espacios | 200; en BD `email`/`notes` = `null` (releídos por GET); no enviados intactos | ✅ |
+| TC-CUS-013 | `PATCH` vacío / sin permisos / otra empresa | 400 / 403 / 404 | ✅ |
+| TC-CUS-014 | `DELETE /customers/:id` | 404 (no existe: la baja es `PATCH {isActive:false}`) | ✅ |
+
+## M09 — Proveedores (integración: `tests/integration/suppliers.integration.test.ts`)
+
+| ID | Descripción | Resultado esperado | Estado |
+|---|---|---|---|
+| TC-SUP-001 | `GET /suppliers` sin token / sin `suppliers.read` | 401 / 403 | ✅ |
+| TC-SUP-002 | Listado con rol `proveeduria` (RBAC positivo) | 200, solo proveedores propios con `address`, sin datos sensibles | ✅ |
+| TC-SUP-003 | Paginación consistente | `meta` calculada en backend coherente con `total` real | ✅ |
+| TC-SUP-004 | Búsqueda por nombre/contacto/RUC con regex hostiles | `search` filtra; regex hostil → 200 | ✅ |
+| TC-SUP-005 | Filtro `status` y campos no permitidos | `status=inactive` filtra; `sort=passwordHash` → 400; `limit=5000` → 400 | ✅ |
+| TC-SUP-006 | Detalle con dirección completa | 200, correo en minúsculas y `contactName`/`ruc` | ✅ |
+| TC-SUP-007 | Otra empresa / `:id` inválido / inexistente | 404 / 400 / 404 | ✅ |
+| TC-SUP-008 | Creación completa | 201, correo normalizado, dirección, `companyId` propio | ✅ |
+| TC-SUP-009 | Nombres duplicados | 201 (decisión de negocio: sin unicidad) | ✅ |
+| TC-SUP-010 | Payload inválido / sin `suppliers.write` / sin token | 400 con `details[]` / 403 / 401 | ✅ |
+| TC-SUP-011 | `PATCH` contacto + `address` (reemplazo completo) + estado | 200; filtro `status` refleja la baja y reactivación | ✅ |
+| TC-SUP-012 | `PATCH` limpia opcionales con `''`/solo espacios | 200; en BD `email`/`ruc`/`notes` = `null` (releídos por GET); no enviados intactos | ✅ |
+| TC-SUP-013 | `PATCH` vacío / sin permisos / otra empresa | 400 / 403 / 404 | ✅ |
+| TC-SUP-014 | `DELETE /suppliers/:id` | 404 (no existe: la baja es `PATCH {isActive:false}`) | ✅ |
+
 ## M10 — Almacenes (integración: `tests/integration/warehouses.integration.test.ts`)
 
 | ID | Descripción | Resultado esperado | Estado |
@@ -186,7 +224,10 @@ Formato: `TC-<módulo>-<número>` · Estado: ✅ aprobado · ⏳ pendiente · �
 | TC-UNIT-016 | `warehouse.schema.test.ts` / `inventory.schema.test.ts` | schemas de almacén e inventario: enums de movimiento, cantidad por tipo, `availability`/`minStock`, sort/limit, claves desconocidas descartadas | ✅ |
 | TC-UNIT-017 | `warehouses.repository.test.ts` / `inventory.repository.test.ts` | filtros con scope `companyId` (status, type, warehouseId, búsqueda escapada, regex hostil) | ✅ |
 | TC-UNIT-018 | `inventory.service.test.ts` | `toMovementSummary`: snapshots de almacén/producto, `quantityAfter`, campos nulos, sin secretos | ✅ |
+| TC-UNIT-019 | `customer.schema.test.ts` / `supplier.schema.test.ts` | Diseño B: `''`/espacios/`null` → `null` en UPDATE y ausentes en CREATE, refine "al menos un campo", sort/limit, claves desconocidas descartadas | ✅ |
+| TC-UNIT-020 | `customers.repository.test.ts` / `suppliers.repository.test.ts` | filtros con scope `companyId` (status, búsqueda escapada, sort whitelist, regex hostil) | ✅ |
+| TC-UNIT-021 | `customers.service.test.ts` / `suppliers.service.test.ts` | mappers: opcionales `|| null` (sin `undefined` en JSON), `address` completa, sin fugas de hash | ✅ |
 
 ## Pendientes por fase
 
-⏳ Fase 10+: TC-CUS-*, TC-SUP-*, TC-SALE-*, TC-PUR-*… (ver test-plan.md)
+⏳ Fase 11+: TC-SALE-*, TC-PUR-*… (ver test-plan.md)

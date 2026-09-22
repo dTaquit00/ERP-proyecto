@@ -94,6 +94,23 @@ Definición de "terminado" aplicada por fase.
 - [x] Lint correcto · TypeScript sin errores · 255/255 tests · `npm run build` OK
 - [x] Documentación actualizada (api, test-cases, test-plan, quality-checklist, requirements, architecture, database, security, README)
 
+## Fase 10 — Clientes (M08) y Proveedores (M09)
+
+- [x] Módulo completo `customers/`: model · repository · service · controller · routes · types · tests
+- [x] Módulo completo `suppliers/`: misma estructura (comparte `optionalText`/`clearable*`/`address` con M08)
+- [x] Endpoints: `GET/POST /customers`, `GET|PATCH /customers/:id`, `GET/POST /suppliers`, `GET|PATCH /suppliers/:id`
+- [x] RBAC verificado en backend (`customers.read/write`, `suppliers.read/write`) con negativas 401/403 y positivas con roles mínimos (`comercial`, `proveeduria`)
+- [x] Aislamiento multiempresa: recursos de otra empresa → 404 (sin filtrar existencia)
+- [x] Sin borrado físico: baja vía `PATCH {isActive:false}`; `DELETE` no existe (404 probado en ambas suites)
+- [x] **Sin unicidad** de nombre/correo/DNI/RUC (decisión de negocio documentada: duplicados → 201)
+- [x] Diseño B de limpieza: en PATCH, `''`/solo espacios/`null` → persiste `null` (≠ `undefined` = no tocar); en POST lo en blanco se omite como campo ausente
+- [x] `address` subdocumento `{_id:false}` reemplazado completo en PATCH; mapeo de respuesta `|| null` (escalares y subcampos) → JSON sin `undefined`
+- [x] Cuerpo PATCH sin campos → 400 (`al menos un campo`); nunca se expone `passwordHash` (verificado por test)
+- [x] Listados: paginación, `search` (regex escapado), `status`, `sort` con whitelist anti sort-injection
+- [x] Pruebas: unitarias (schemas Diseño B, `buildCustomerFilter`/`buildSupplierFilter`, mappers a `string | null`) + integración (14 clientes + 14 proveedores, con negativos)
+- [x] Lint correcto · TypeScript sin errores · 316/316 tests · `npm run build` OK
+- [x] Documentación actualizada (api, test-cases, test-plan, quality-checklist, requirements, architecture, database, README)
+
 ## Pendiente para fases siguientes
 
 - [ ] Auditoría (`audit_logs`) al confirmar operaciones empresariales — Fase 15
