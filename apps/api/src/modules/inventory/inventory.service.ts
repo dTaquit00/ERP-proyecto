@@ -10,6 +10,7 @@ import type {
   ListStockQueryInput,
   UpdateStockInput,
 } from '@erp/validation';
+import type { ClientSession } from 'mongoose';
 import {
   BadRequestError,
   ConflictError,
@@ -231,12 +232,16 @@ export const inventoryService = {
    * Orden: se calcula el stock resultante con una actualización atómica
    * (el OUT usa filtro `quantity >= q`, así el stock nunca queda negativo) y
    * después se persiste el movimiento; si el insert falla se compensa el stock.
-   * La atomicidad multi-documento completa llega con transacciones (Fase 11–12).
+   *
+   * `session` opcional (Fase 11+): con sesión (ventas) la atomicidad la aporta
+   * la transacción — si algo falla, TODO se revierte y NO se compensa a mano;
+   * sin sesión se mantiene la compensación clásica de M11.
    */
   async createMovement(
     companyId: string,
     input: CreateMovementInput,
     actor: MovementActor,
+    session?: ClientSession,
   ): Promise<InventoryMovementResponse> {
     // TRANSFER exige el permiso específico `inventory.transfer` además de write.
     if (input.type === 'TRANSFER' && !actor.canTransfer) {
@@ -277,14 +282,18 @@ export const inventoryService = {
 
     const effect = movementEffect(input.type, input.quantity);
     const originScope = stockScope(companyId, warehouse.id, product.id);
-    const existing = await inventoryRepository.ensureBalance(originScope);
+    const existing = await inventoryRepository.ensureBalance(originScope, session);
 
     let quantityAfter: number;
     let rollback: (() => Promise<void>) | undefined;
 
     switch (effect) {
       case 'increase': {
-        const updated = await inventoryRepository.increaseQuantity(originScope, input.quantity);
+        const updated = await inventoryRepository.increaseQuantity(
+          originScope,
+          input.quantity,
+          session,
+        );
         quantityAfter = updated.quantity;
         rollback = async () => {
           await inventoryRepository.tryDecreaseQuantity(originScope, input.quantity);
@@ -295,6 +304,7 @@ export const inventoryService = {
         const updated = await inventoryRepository.tryDecreaseQuantity(
           originScope,
           input.quantity,
+          session,
         );
         if (!updated) {
           throw new ConflictError('Existencias insuficientes', 'INSUFFICIENT_STOCK');
@@ -307,7 +317,7 @@ export const inventoryService = {
       }
       case 'set': {
         const previousQuantity = existing.quantity;
-        const updated = await inventoryRepository.setQuantity(originScope, input.quantity);
+        const updated = await inventoryRepository.setQuantity(originScope, input.quantity, session);
         quantityAfter = updated.quantity;
         rollback = async () => {
           await inventoryRepository.setQuantity(originScope, previousQuantity);
@@ -319,10 +329,10 @@ export const inventoryService = {
     if (input.type === 'TRANSFER' && toWarehouseId) {
       const destScope = stockScope(companyId, toWarehouseId, product.id);
       try {
-        await inventoryRepository.ensureBalance(destScope);
-        await inventoryRepository.increaseQuantity(destScope, input.quantity);
+        await inventoryRepository.ensureBalance(destScope, session);
+        await inventoryRepository.increaseQuantity(destScope, input.quantity, session);
       } catch (error) {
-        await safeRollback(rollback);
+        if (!session) await safeRollback(rollback);
         throw error;
       }
       const originRollback = rollback;
@@ -334,25 +344,29 @@ export const inventoryService = {
 
     let movement: InventoryMovementDocument;
     try {
-      movement = await inventoryRepository.createMovement({
-        companyId,
-        type: input.type,
-        warehouseId: warehouse.id,
-        warehouseName: warehouse.name,
-        toWarehouseId,
-        toWarehouseName,
-        productId: product.id,
-        productName: product.name,
-        productSku: product.sku,
-        quantity: input.quantity,
-        quantityAfter,
-        reason: input.reason,
-        documentRef: input.documentRef,
-        userId: actor.id,
-        userName: actor.name,
-      });
+      movement = await inventoryRepository.createMovement(
+        {
+          companyId,
+          type: input.type,
+          warehouseId: warehouse.id,
+          warehouseName: warehouse.name,
+          toWarehouseId,
+          toWarehouseName,
+          productId: product.id,
+          productName: product.name,
+          productSku: product.sku,
+          quantity: input.quantity,
+          quantityAfter,
+          reason: input.reason,
+          documentRef: input.documentRef,
+          userId: actor.id,
+          userName: actor.name,
+        },
+        session,
+      );
     } catch (error) {
-      await safeRollback(rollback);
+      // Con sesión, la transacción revierte el decremento: compensar aquí sería redundante.
+      if (!session) await safeRollback(rollback);
       throw error;
     }
 

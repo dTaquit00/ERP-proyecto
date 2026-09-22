@@ -73,10 +73,22 @@ helmet → cors → express.json → cookie-parser → pino-http
 
 ## 5. Consistencia transaccional
 
-MongoDB admite transacciones multi-documento con replica set (Atlas lo es). Operaciones
-que deben ser atómicas (confirmar venta → venta + stock + movimiento + auditoría) se
-ejecutarán dentro de `mongoose.startSession()` / `withTransaction` (Fase 11–12).
-Si alguna operación falla, no quedan datos parciales.
+MongoDB admite transacciones multi-documento con replica set (Atlas lo es). Desde la
+**Fase 11** el helper `withTransaction` (`apps/api/src/shared/db/transaction.ts`) envuelve
+`mongoose.startSession()` + `session.withTransaction`: confirmar/cancelar/devolver una
+venta actualiza la venta y genera los movimientos de inventario de forma atómica. Si
+alguna operación falla (p. ej. `INSUFFICIENT_STOCK`), la transacción se aborta y no
+quedan datos parciales.
+
+- Los repositorios de inventario aceptan `session` opcional: **con sesión** (ventas) el
+  rollback lo hace la transacción; **sin sesión** (movimientos manuales de M11) se
+  mantiene la compensación clásica sin cambios de comportamiento.
+- El reclamo de estado de la venta es condicional (`status` ∈ estados permitidos)
+  dentro de la misma transacción: dos confirmaciones concurrentes no duplican stock.
+- Sin replica set, `withTransaction` traduce el código 20 de MongoDB a
+  500 `TRANSACTIONS_REQUIRED` (error de configuración claro, no un 500 opaco).
+- Las pruebas usan `MongoMemoryReplSet` (réplica de un nodo en memoria): las
+  transacciones exigen topología de replica set.
 
 ## 6. Escalabilidad
 
@@ -98,6 +110,7 @@ Si alguna operación falla, no quedan datos parciales.
 | 8 | M06 Categorías + M07 Productos (catálogo con SKU único e impuestos configurables) | ✅ |
 | 9 | M10 Almacenes + M11 Inventario (stock con movimientos inmutables `IN/OUT/ADJUSTMENT/TRANSFER/RETURN`) | ✅ |
 | 10 | M08 Clientes + M09 Proveedores (directorio maestro sin unicidad, alta-baja por `isActive`, limpieza `''` → `null`) | ✅ |
-| 11–15 | Ventas, compras, dashboard, reportes, auditoría | ⏳ |
+| 11 | M12 Ventas (ciclo `pending → confirmed → cancelled/returned`, totales en backend, transacciones con inventario) | ✅ |
+| 12–15 | Compras, dashboard, reportes, auditoría | ⏳ |
 | 16 | Frontend web + móvil | ⏳ |
 | 17–20 | E2E, seguridad, optimización, docs, producción | ⏳ |

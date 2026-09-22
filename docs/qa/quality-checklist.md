@@ -111,10 +111,29 @@ Definición de "terminado" aplicada por fase.
 - [x] Lint correcto · TypeScript sin errores · 316/316 tests · `npm run build` OK
 - [x] Documentación actualizada (api, test-cases, test-plan, quality-checklist, requirements, architecture, database, README)
 
+## Fase 11 — Ventas (M12)
+
+- [x] Módulo completo `sales/`: model · repository · service · controller · routes · types · tests
+- [x] Tipos compartidos `sale.types.ts` (estados, líneas con snapshot, impuestos, historial) + schema Zod `sale.schema.ts` con tests unitarios
+- [x] Endpoints: `GET/POST /sales`, `GET /sales/:id`, `POST /sales/:id/confirm|cancel|return` — sin PATCH/DELETE (404 probado): el documento solo transiciona de estado
+- [x] RBAC verificado en backend (`sales.read/write/cancel/return`) con negativas 401/403 y positivas con el rol sistema `vendedor` (que **no** tiene `sales.cancel`)
+- [x] **Backend calcula siempre precios/impuestos/totales**: `unitPrice` = `product.salePrice` (el enviado por el cliente se ignora — probado), descuento antes de impuestos, redondeo a 2 decimales, cabecera con `taxes[]` agregadas
+- [x] Máquina de estados `pending → confirmed → cancelled/returned` con reclamo condicional atómico (409 `INVALID_SALE_STATE` en transiciones inválidas o concurrentes)
+- [x] **Transacciones multi-documento** (novedad de la fase): helper `withTransaction` (`shared/db/transaction.ts`) + `session` opcional en repository/service de inventario — con sesión el rollback lo hace la transacción; sin sesión la compensación de M11 queda intacta; sin replica set → 500 `TRANSACTIONS_REQUIRED`
+- [x] Confirmar debita stock (`OUT` por ítem); cancelar confirmada y devolver repone (`RETURN`); cancelar pendiente no toca stock — verificado contra la existencia y los movimientos (`documentRef = SALE:<id>`)
+- [x] Rollback probado en frío: `INSUFFICIENT_STOCK` y almacén desactivado dejan la venta en `pending`, el stock sin cambios y sin movimientos huérfanos
+- [x] FK con códigos propios 400 (`CUSTOMER_NOT_FOUND`/`WAREHOUSE_NOT_FOUND`/`PRODUCT_NOT_FOUND`) y desactivados 409 (`CUSTOMER_DISABLED`/`PRODUCT_INACTIVE`/`WAREHOUSE_DISABLED`)
+- [x] Aislamiento multiempresa: venta de otra empresa → 404 en detalle y ausente en listados
+- [x] `history[]` con `created|confirmed|cancelled|returned` + snapshots "foto" (cliente, usuario, almacén, productos)
+- [x] Listados: paginación, `search` (regex escapado sobre snapshots), filtros estado/cliente/almacén/fechas (día calendario UTC inclusivo, fechas imposibles rechazadas por round-trip), `sort` con whitelist
+- [x] Pruebas: unitarias (`sale.schema.test`, `computeLineTotals`/`aggregateTaxes`/`roundMoney`/`toSaleResponse`, `buildSaleFilter`) + integración (23 casos, con negativos y transacciones)
+- [x] Tests migrados a `MongoMemoryReplSet` (replica set en memoria: requisito de las transacciones; documentado)
+- [x] Lint correcto · TypeScript sin errores · 361/361 tests · `npm run build` OK
+- [x] Documentación actualizada (api, test-cases, test-plan, quality-checklist, requirements, architecture, database, README)
+
 ## Pendiente para fases siguientes
 
 - [ ] Auditoría (`audit_logs`) al confirmar operaciones empresariales — Fase 15
-- [ ] Transacciones multi-documento — Fase 11–12
 - [ ] Paginación/filtros en todos los listados — desde Fase 7
 - [ ] `npm audit` + pentest interno — Fase 17–18
 - [ ] E2E completo (login → venta → inventario → reporte) — Fase 17

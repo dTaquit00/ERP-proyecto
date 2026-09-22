@@ -1,4 +1,4 @@
-import { Types, type FilterQuery } from 'mongoose';
+import { Types, type ClientSession, type FilterQuery } from 'mongoose';
 import type { ListMovementsQueryInput, ListStockQueryInput } from '@erp/validation';
 import {
   InventoryMovementModel,
@@ -88,23 +88,30 @@ export const inventoryRepository = {
     return { balances, total };
   },
 
-  /** Crea la existencia con cantidad 0 si aún no existe (idempotente). */
-  async ensureBalance(scope: StockScope): Promise<StockBalanceDocument> {
+  /**
+   * Crea la existencia con cantidad 0 si aún no existe (idempotente).
+   * `session` opcional: operación dentro de una transacción (Fase 11+).
+   */
+  async ensureBalance(scope: StockScope, session?: ClientSession): Promise<StockBalanceDocument> {
     const balance = await StockBalanceModel.findOneAndUpdate(
       stockScopeFilter(scope),
       { $setOnInsert: { quantity: 0, minStock: 0 } },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, new: true, setDefaultsOnInsert: true, session },
     ).exec();
     if (!balance) throw new Error('No se pudo asegurar la existencia');
     return balance;
   },
 
   /** Suma (+delta) a la existencia; devuelve el documento actualizado. */
-  async increaseQuantity(scope: StockScope, delta: number): Promise<StockBalanceDocument> {
+  async increaseQuantity(
+    scope: StockScope,
+    delta: number,
+    session?: ClientSession,
+  ): Promise<StockBalanceDocument> {
     const balance = await StockBalanceModel.findOneAndUpdate(
       stockScopeFilter(scope),
       { $inc: { quantity: delta } },
-      { new: true },
+      { new: true, session },
     ).exec();
     if (!balance) throw new Error('La existencia no existe');
     return balance;
@@ -117,20 +124,25 @@ export const inventoryRepository = {
   async tryDecreaseQuantity(
     scope: StockScope,
     quantity: number,
+    session?: ClientSession,
   ): Promise<StockBalanceDocument | null> {
     return StockBalanceModel.findOneAndUpdate(
       { ...stockScopeFilter(scope), quantity: { $gte: quantity } },
       { $inc: { quantity: -quantity } },
-      { new: true },
+      { new: true, session },
     ).exec();
   },
 
   /** Fija la cantidad absoluta (recuento físico de ADJUSTMENT). */
-  async setQuantity(scope: StockScope, quantity: number): Promise<StockBalanceDocument> {
+  async setQuantity(
+    scope: StockScope,
+    quantity: number,
+    session?: ClientSession,
+  ): Promise<StockBalanceDocument> {
     const balance = await StockBalanceModel.findOneAndUpdate(
       stockScopeFilter(scope),
       { $set: { quantity } },
-      { new: true },
+      { new: true, session },
     ).exec();
     if (!balance) throw new Error('La existencia no existe');
     return balance;
@@ -168,7 +180,12 @@ export const inventoryRepository = {
     return { movements, total };
   },
 
-  async createMovement(input: MovementPersistInput): Promise<InventoryMovementDocument> {
-    return InventoryMovementModel.create(input);
+  async createMovement(
+    input: MovementPersistInput,
+    session?: ClientSession,
+  ): Promise<InventoryMovementDocument> {
+    const movement = new InventoryMovementModel(input);
+    await movement.save({ session });
+    return movement;
   },
 };

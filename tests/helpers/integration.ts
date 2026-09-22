@@ -1,4 +1,4 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import type { Express } from 'express';
 import { createApp } from '@erp/api';
@@ -13,7 +13,7 @@ export const TEST_PASSWORD = 'Passw0rd123';
 
 export interface TestContext {
   app: Express;
-  mongod: MongoMemoryServer;
+  mongod: MongoMemoryReplSet;
   company: CompanyDocument;
   otherCompany: CompanyDocument;
   adminRole: RoleDocument;
@@ -40,9 +40,14 @@ export interface TestContext {
   otherCompanyCategory: CategoryDocument;
 }
 
-/** Levanta MongoDB en memoria + la app Express y siembra datos base. */
+/**
+ * Levanta MongoDB en memoria + la app Express y siembra datos base.
+ * Replica set de un nodo (desde Fase 11): las ventas confirman/cancelan con
+ * transacciones multi-documento, que exigen topología de replica set (lo mismo
+ * que ya ofrece MongoDB Atlas en producción).
+ */
 export async function setupTestContext(): Promise<TestContext> {
-  const mongod = await MongoMemoryServer.create();
+  const mongod = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongod.getUri());
 
   const company = await CompanyModel.create({ name: 'Empresa Test', status: 'active' });

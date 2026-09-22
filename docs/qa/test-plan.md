@@ -20,7 +20,7 @@ npm run build      # compilación de producción
 | Integración API→service→MongoDB | `tests/integration/` | Vitest + Supertest + mongodb-memory-server | ✅ Fase 10 |
 | E2E | `tests/e2e/` | API: Vitest+Supertest; web: Playwright; móvil: Detox | ⏳ Fase 17 |
 
-## Cobertura actual (Fase 10 — 316 pruebas: 161 unitarias + 155 de integración)
+## Cobertura actual (Fase 11 — 361 pruebas: 183 unitarias + 178 de integración)
 
 - Hash/verificación de contraseñas (scrypt), incluidos hashes malformados.
 - Firma/verificación de JWT: expirado, manipulado, `typ` incorrecto, incompleto.
@@ -86,6 +86,20 @@ npm run build      # compilación de producción
 - Proveedores: la misma batería sobre M09 con rol propio `proveeduria`
   (nombre distinto a los 7 roles del sistema), campos `contactName`/`ruc`,
   duplicados permitidos (201) y limpieza `email`/`ruc`/`notes` → `null`.
+- Ventas: RBAC 401/403 (lectura/escritura con el rol sistema `vendedor`, que NO
+  tiene `sales.cancel` → 403; devolución sí permitida), aislamiento multiempresa
+  (404 en detalle y ausente en listados), cálculo de totales en backend (precio de
+  catálogo ignorando el `unitPrice` enviado, IVA por línea, descuento aplicado antes
+  de impuestos, redondeo a 2 decimales), FK con códigos propios (400
+  `CUSTOMER_NOT_FOUND`/`WAREHOUSE_NOT_FOUND`/`PRODUCT_NOT_FOUND`), desactivados
+  (409 `CUSTOMER_DISABLED`/`PRODUCT_INACTIVE`/`WAREHOUSE_DISABLED`), validación de
+  entrada (items vacíos, cantidad 0, producto repetido, discount > 100, fechas
+  imposibles), confirm con `OUT` por ítem y **rollback total** ante
+  `INSUFFICIENT_STOCK` o almacén desactivado (venta intacta, sin movimientos),
+  doble transición → 409 `INVALID_SALE_STATE`, cancel pendiente sin tocar stock /
+  confirmada con restock `RETURN`, devolución `confirmed → returned` con restock,
+  historial `created → confirmed → returned`, filtros (estado/cliente/almacén/
+  búsqueda/fechas/sort) y sin PATCH/DELETE (404).
 
 ## Casos negativos obligatorios por módulo nuevo
 
@@ -104,6 +118,8 @@ errores de MongoDB · errores de red.
 
 ## Entorno de pruebas
 
-- MongoDB real no requerido: `mongodb-memory-server` levanta una instancia por suite.
+- MongoDB real no requerido: `mongodb-memory-server` levanta una **réplica de un nodo
+  (`MongoMemoryReplSet`)** por suite — desde Fase 11 las transacciones multi-documento
+  exigen topología de replica set (lo mismo que Atlas en producción).
 - `NODE_ENV=test`, logs en `silent`, límites de rate limit elevados (el rate limit se
   prueba en una app aislada para no interferir).

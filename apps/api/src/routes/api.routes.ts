@@ -9,6 +9,7 @@ import { warehousesRoutes } from '../modules/warehouses/warehouses.routes.js';
 import { inventoryRoutes } from '../modules/inventory/inventory.routes.js';
 import { customersRoutes } from '../modules/customers/customers.routes.js';
 import { suppliersRoutes } from '../modules/suppliers/suppliers.routes.js';
+import { salesRoutes } from '../modules/sales/sales.routes.js';
 
 /** Router maestro bajo /api/v1 — aquí se montarán los módulos por fase. */
 export const apiRouter = Router();
@@ -23,3 +24,4 @@ apiRouter.use('/warehouses', warehousesRoutes);
 apiRouter.use('/inventory', inventoryRoutes);
 apiRouter.use('/customers', customersRoutes);
 apiRouter.use('/suppliers', suppliersRoutes);
+apiRouter.use('/sales', salesRoutes);

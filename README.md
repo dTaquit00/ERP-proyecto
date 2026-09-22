@@ -14,12 +14,12 @@ Construido con **TypeScript estricto** en todo el stack:
 | Validación | Zod (schemas compartidos) |
 | Pruebas | Vitest + Supertest + mongodb-memory-server |
 
-> Estado actual: **Fase 10 completada** — monorepo, API base, seguridad, MongoDB,
+> Estado actual: **Fase 11 completada** — monorepo, API base, seguridad, MongoDB,
 > autenticación (M01), usuarios (M02), roles/permisos (M03), categorías (M06),
-> productos (M07), almacenes (M10), inventario (M11), clientes (M08) y
-> proveedores (M09), con RBAC verificado en backend y pruebas unitarias e de
-> integración. Los módulos restantes se construyen por fases según
-> `docs/requirements/requirements.md`.
+> productos (M07), almacenes (M10), inventario (M11), clientes (M08),
+> proveedores (M09) y ventas (M12, con transacciones multi-documento), con RBAC
+> verificado en backend y pruebas unitarias e de integración. Los módulos
+> restantes se construyen por fases según `docs/requirements/requirements.md`.
 
 ---
 
@@ -45,6 +45,8 @@ Reglas fijas:
 - El backend **siempre** calcula totales, valida entradas y verifica permisos (RBAC).
 - Toda operación empresarial lleva `companyId` (aislamiento multiempresa).
 - Multiempresa: un usuario jamás consulta datos de otra empresa aunque conozca el ID.
+- Las operaciones multi-documento (confirmar/cancelar/devolver venta + stock) se
+  ejecutan en **transacciones atómicas** (desde la Fase 11).
 
 Estructura del monorepo (npm workspaces):
 
@@ -141,8 +143,10 @@ npm test           # typecheck + unitarias + integración (Vitest)
 npm run build      # compila packages + api a dist/
 ```
 
-Las integraciones usan **mongodb-memory-server**: no necesitas una base de datos
-real para ejecutar `npm test`.
+Las integraciones usan **mongodb-memory-server** con una réplica de un nodo en
+memoria (`MongoMemoryReplSet`), la topología que exigen las transacciones
+multi-documento desde la Fase 11: no necesitas una base de datos real para
+ejecutar `npm test`.
 
 ## API
 
@@ -150,7 +154,7 @@ Base: `/api/v1`. Convención completa en `docs/api/api.md`.
 
 Éxito: `{ "data": ... }` · Error: `{ "error": { "code", "message", "details?" } }`
 
-Endpoints (Fases 6–10):
+Endpoints (Fases 6–11):
 
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -184,14 +188,19 @@ Endpoints (Fases 6–10):
 | GET | `/inventory/movements` | Movimientos inmutables, filtros por tipo/almacén |
 | GET | `/inventory/movements/:id` | Detalle de movimiento (solo lectura: sin PATCH/DELETE) |
 | POST | `/inventory/movements` | Registrar `IN`/`OUT`/`RETURN`/`ADJUSTMENT`/`TRANSFER` (`inventory.transfer` extra para TRANSFER) |
+| GET, POST | `/sales` | Ventas con filtros (`sales.read`/`sales.write`): **el backend calcula** precios, impuestos y totales |
+| GET | `/sales/:id` | Detalle con `items[]`, snapshots e historial de estados |
+| POST | `/sales/:id/confirm` | Confirma y debita stock con `OUT` por ítem (transacción; rollback si falla) |
+| POST | `/sales/:id/cancel` | Anula (`sales.cancel`); si estaba confirmada repone stock con `RETURN` |
+| POST | `/sales/:id/return` | Devolución (`sales.return`) con restock `RETURN` |
 | GET | `/health` | Estado del servidor y de MongoDB |
 
 ## Base de datos
 
 Colecciones: `users`, `roles`, `companies`, `sessions`, `password_reset_tokens`
 (fase 6), `categories`, `products` (fase 8), `warehouses`, `stock_balances`,
-`inventory_movements` (fase 9) y `customers`, `suppliers` (fase 10); por fase,
-`branches`, `sales`, `purchases`, `cash_movements`, `audit_logs`.
+`inventory_movements` (fase 9), `customers`, `suppliers` (fase 10) y `sales`
+(fase 11); por fase, `branches`, `purchases`, `cash_movements`, `audit_logs`.
 Detalle y justificación de cada relación en `docs/architecture/database.md`.
 
 ## Seguridad

@@ -202,6 +202,36 @@ Formato: `TC-<módulo>-<número>` · Estado: ✅ aprobado · ⏳ pendiente · �
 | TC-INV-017 | `GET /movements/:id` propio y aislamiento | 200 con snapshots; otra empresa → 404 | ✅ |
 | TC-INV-018 | Inmovilidad de movimientos | no existen PATCH/DELETE → 404; los documentos no se alteran | ✅ |
 
+---
+
+## M12 — Ventas (integración: `tests/integration/sales.integration.test.ts`)
+
+| ID | Caso | Esperado | Estado |
+|---|---|---|---|
+| TC-SALE-001 | `GET`/`POST /sales` sin token / sin permiso | 401 / 403 | ✅ |
+| TC-SALE-002 | Rol sistema `vendedor` (`sales.read/write`): lista y crea; `cancel` → 403 | RBAC positivo y negativo con el mismo rol; venta intacta tras el 403 | ✅ |
+| TC-SALE-003 | Vendedor confirma (`sales.write`) y devuelve (`sales.return`) | 200 con stock `OUT`/`RETURN` verificado; movimientos como conjunto (orden no determinista) | ✅ |
+| TC-SALE-004 | Totales calculados por el backend | `unitPrice` enviado 999 → 20 de catálogo; IVA 16 % por línea; cabecera `subtotal 71`, `taxes [{IVA,16,9.6}]`, `total 80.6`; snapshots e `history[created]` | ✅ |
+| TC-SALE-005 | Descuento de línea | 10 % aplicado **antes** de impuestos: `discountAmount 4`, IVA sobre 36 → 5.76, `total 41.76` | ✅ |
+| TC-SALE-006 | FK inexistentes o de otra empresa | 400 `CUSTOMER_NOT_FOUND` / `WAREHOUSE_NOT_FOUND` / `PRODUCT_NOT_FOUND` | ✅ |
+| TC-SALE-007 | Recursos desactivados | 409 `CUSTOMER_DISABLED` / `PRODUCT_INACTIVE` / `WAREHOUSE_DISABLED` | ✅ |
+| TC-SALE-008 | Entradas inválidas | 400 `VALIDATION_ERROR`: items vacíos, cantidad 0, producto repetido, id mal formado, discount 101, notas > 500 | ✅ |
+| TC-SALE-009 | Confirmar | 200 `confirmed`; stock debitado en la existencia; `OUT` con `documentRef = SALE:<id>` e historial | ✅ |
+| TC-SALE-010 | Stock insuficiente al confirmar | 409 `INSUFFICIENT_STOCK` con **rollback total**: venta `pending`, stock y movimientos intactos | ✅ |
+| TC-SALE-011 | Doble confirmación | 409 `INVALID_SALE_STATE` sin tocar stock | ✅ |
+| TC-SALE-012 | Almacén desactivado tras crear la venta | 409 `WAREHOUSE_DISABLED` y rollback (venta `pending`, sin movimientos) | ✅ |
+| TC-SALE-013 | Cancelar pendiente (`sales.cancel`) | 200 `cancelled` sin tocar stock ni generar movimientos | ✅ |
+| TC-SALE-014 | Cancelar confirmada | 200 con restock `RETURN` (stock de vuelta al valor previo) | ✅ |
+| TC-SALE-015 | Cancelar ya cancelada / devuelta | 409 `INVALID_SALE_STATE` | ✅ |
+| TC-SALE-016 | Devolver confirmada (`sales.return`) | 200 `returned`, restock `RETURN`, historial `created → confirmed → returned` | ✅ |
+| TC-SALE-017 | Devolver pendiente o ya devuelta | 409 `INVALID_SALE_STATE` sin cambios | ✅ |
+| TC-SALE-018 | Filtros del listado | `status`/`customerId`/`warehouseId`/`search` (cliente y SKU sobre snapshots)/`dateFrom`–`dateTo` (ayer–hoy → 8; mañana → 0)/`sort=total` consistente | ✅ |
+| TC-SALE-019 | Parámetros de listado inválidos | 400 `VALIDATION_ERROR` (sort, order, limit, status, fecha imposible, rango invertido, customerId) | ✅ |
+| TC-SALE-020 | Aislamiento en listado | solo las ventas propias (8); sin `Cliente Ajeno`, `Bob Otro` ni `passwordHash` | ✅ |
+| TC-SALE-021 | Detalle e historial | snapshots + `history created → confirmed → returned` y fechas de transición | ✅ |
+| TC-SALE-022 | Inmovilidad del documento | `PATCH`/`DELETE /sales/:id` → 404 y la venta no cambia | ✅ |
+| TC-SALE-023 | Detalle con id inválido / inexistente / ajeno | 400 `VALIDATION_ERROR` / 404 `Venta no encontrada` / 404 | ✅ |
+
 ## Unitarias
 
 | ID | Archivo | Casos | Estado |
@@ -227,7 +257,10 @@ Formato: `TC-<módulo>-<número>` · Estado: ✅ aprobado · ⏳ pendiente · �
 | TC-UNIT-019 | `customer.schema.test.ts` / `supplier.schema.test.ts` | Diseño B: `''`/espacios/`null` → `null` en UPDATE y ausentes en CREATE, refine "al menos un campo", sort/limit, claves desconocidas descartadas | ✅ |
 | TC-UNIT-020 | `customers.repository.test.ts` / `suppliers.repository.test.ts` | filtros con scope `companyId` (status, búsqueda escapada, sort whitelist, regex hostil) | ✅ |
 | TC-UNIT-021 | `customers.service.test.ts` / `suppliers.service.test.ts` | mappers: opcionales `|| null` (sin `undefined` en JSON), `address` completa, sin fugas de hash | ✅ |
+| TC-UNIT-022 | `sale.schema.test.ts` | CREATE: refs, 1–100 líneas, producto duplicado, cantidad/descuento, notas/fecha; query: defaults, filtros, fecha imposible por round-trip, rango invertido | ✅ |
+| TC-UNIT-023 | `sales.service.test.ts` | `roundMoney` (coma flotante), `computeLineTotals` (descuento antes de IVA, multi-impuesto, redondeo), `aggregateTaxes`, `toSaleResponse` (snapshots, `|| null`, historial ISO, sin `passwordHash`) | ✅ |
+| TC-UNIT-024 | `sales.repository.test.ts` | `buildSaleFilter`: scope `companyId`, estado/refs a ObjectIds, rango de fechas día UTC inclusivo, búsqueda escapada sobre snapshots | ✅ |
 
 ## Pendientes por fase
 
-⏳ Fase 11+: TC-SALE-*, TC-PUR-*… (ver test-plan.md)
+⏳ Fase 12+: TC-PUR-*… (ver test-plan.md)

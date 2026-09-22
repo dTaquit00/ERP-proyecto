@@ -258,7 +258,7 @@ Reglas de negocio:
 
 - Almacén/producto referenciado debe existir en la **misma empresa** → 400 `WAREHOUSE_NOT_FOUND` / `PRODUCT_NOT_FOUND`.
 - Almacén `isActive:false` → 409 `WAREHOUSE_DISABLED` para IN/OUT/RETURN/TRANSFER; `ADJUSTMENT` sí está permitido (cierre/reconteo).
-- `quantityAfter` se calcula con una actualización atómica y se persiste el movimiento; si el insert falla se compensa el stock (transacciones multi-documento → Fase 11–12).
+- `quantityAfter` se calcula con una actualización atómica y se persiste el movimiento; si el insert falla se compensa el stock. Desde la Fase 11, cuando el movimiento participa en una transacción de venta, el rollback lo aporta la transacción y no se compensa a mano.
 
 ```http
 POST /api/v1/inventory/movements
@@ -268,11 +268,51 @@ POST /api/v1/inventory/movements
 
 ---
 
+## M12 — Ventas
+
+Ciclo de vida: `pending → confirmed → { cancelled | returned }` y `pending → cancelled`.
+El **backend calcula siempre precios, impuestos y totales** desde el catálogo: el precio
+unitario **nunca** proviene del cliente (las claves desconocidas del body se descartan).
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/sales` | `sales.read` | Listado paginado. Query: `page, limit, search(cliente/producto/SKU sobre snapshots), status(pending\|confirmed\|cancelled\|returned), customerId, warehouseId, dateFrom, dateTo (días calendario UTC inclusivos), sort(saleDate\|total\|createdAt\|updatedAt), order`. |
+| GET | `/sales/:id` | `sales.read` | Detalle con `items[]`, `history[]` de transiciones y snapshots. Otra empresa → 404. |
+| POST | `/sales` | `sales.write` | `{customerId, warehouseId, branchId?, saleDate?(ISO), notes?, items:[{productId, quantity ≥ 1, discount? (0–100 %)}]}` → 201 en `pending`; 1–100 líneas y sin producto repetido. |
+| POST | `/sales/:id/confirm` | `sales.write` | `pending → confirmed` + movimientos `OUT` por ítem **en una transacción**: sin stock → 409 `INSUFFICIENT_STOCK` y rollback total (venta sigue `pending`). |
+| POST | `/sales/:id/cancel` | `sales.cancel` | `pending → cancelled` (sin tocar stock) o `confirmed → cancelled` (restock con `RETURN`), en transacción. |
+| POST | `/sales/:id/return` | `sales.return` | Devolución `confirmed → returned` + restock `RETURN`, en transacción. |
+
+Reglas de negocio:
+
+- **Cálculo backend**: `unitPrice = product.salePrice`; por línea `subtotal = precio × cantidad`,
+  el descuento se aplica **antes** de los impuestos, impuestos por tasa del producto y
+  redondeo a 2 decimales; cabecera `subtotal`, `discountTotal`, `taxes[]` agregadas por
+  (nombre, tasa) y `total = Σ totales de línea`.
+- **FK con códigos propios** (400): `CUSTOMER_NOT_FOUND`, `WAREHOUSE_NOT_FOUND`,
+  `PRODUCT_NOT_FOUND` (también aplica a registros de otra empresa).
+- **Recursos desactivados** (409): `CUSTOMER_DISABLED`, `WAREHOUSE_DISABLED`, `PRODUCT_INACTIVE`.
+- Transición inválida o carrera perdida → 409 `INVALID_SALE_STATE` (el reclamo de estado
+  es condicional y atómico).
+- **Transacciones multi-documento** (novedad de Fase 11): `withTransaction`
+  (`shared/db/transaction.ts`) envuelve el reclamo de estado + movimientos de inventario
+  y los aborta juntos. Requiere replica set (Atlas lo es); sin él → 500 `TRANSACTIONS_REQUIRED`.
+- **Sin PATCH/DELETE**: el documento solo transiciona de estado (probado → 404).
+- `branchId` (M05 sucursales) opcional: la validación FK se activa en Fase 13.
+- `history[]`: eventos `created|confirmed|cancelled|returned` con `at`, `userId` y
+  `userName` "foto" (historial del documento sin joins).
+
+```http
+POST /api/v1/sales
+{ "customerId": "6660...", "warehouseId": "6661...",
+  "items": [{ "productId": "665f...", "quantity": 3, "discount": 10 }] }
+```
+
+---
+
 ## Endpoints previstos (por fase)
 
 ```
-GET|POST            /sales                (Fase 11)
-POST                /sales/:id/confirm|cancel|return
 GET|POST            /purchases            (Fase 12)
 POST                /purchases/:id/confirm|receive|cancel
 GET                 /dashboard/summary    (Fase 13)

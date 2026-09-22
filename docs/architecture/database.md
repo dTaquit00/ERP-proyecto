@@ -100,7 +100,7 @@
 | warehouses | 9 ✅ | referencian `branchId` |
 | stock_balances | 9 ✅ | `{companyId, warehouseId, productId}` único → consulta rápida de existencias |
 | inventory_movements | 9 ✅ | tipo `IN OUT ADJUSTMENT TRANSFER RETURN`; documento inmutable con stock resultante |
-| sales | 11 | cabecera referencial + `items[]` embebidos (snapshot de precio/descuento) |
+| sales | 11 ✅ | estados `pending/confirmed/cancelled/returned`; cabecera con snapshots + `items[]` embebidos (precio/impuestos del momento) + `history[]` de transiciones |
 | purchases | 12 | ítems embebidos; recepción genera movimientos IN |
 | cash_movements | futuro | finanzas |
 | audit_logs | 15 | usuario, acción, recurso, resourceId, ip, resultado, fecha |
@@ -109,6 +109,9 @@
 
 - **Ítems embebidos en ventas/compras**: se leen siempre con la cabecera y son
   inmutables tras confirmar (snapshot del precio del momento); no se consultan solos.
+- **Transacciones de venta (Fase 11)**: confirmar/cancelar/devolver cambia la venta y
+  el stock a la vez; exige replica set (Atlas lo es). Helper compartido:
+  `apps/api/src/shared/db/transaction.ts` — compras (Fase 12) lo reutiliza.
 - **stock_balances separado de movements**: la existencia actual es una consulta
   caliente (dashboard, disponibilidad); el histórico es append-only y grande.
 - **audit_logs separado**: crecimiento independiente, sin joins con datos de negocio,
@@ -117,6 +120,6 @@
 
 ## Índices globales por consulta frecuente
 
-- Ventas: `{companyId, createdAt}`, `{companyId, status}`, `{companyId, customerId}`
+- Ventas: `{companyId, saleDate}`, `{companyId, status, saleDate}`, `{companyId, customerId, saleDate}`, `{companyId, warehouseId, saleDate}`
 - Movimientos: `{companyId, productId, createdAt}`, `{warehouseId, createdAt}`
 - Auditoría: `{companyId, createdAt}`, `{companyId, resource, resourceId}`
