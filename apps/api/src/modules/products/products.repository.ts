@@ -39,6 +39,12 @@ export const productsRepository = {
     return ProductModel.findOne({ companyId, sku }).exec();
   },
 
+  /** Productos de la empresa por ids (para resolver nombres en inventario). */
+  async findManyByIds(companyId: string, ids: string[]): Promise<ProductDocument[]> {
+    if (ids.length === 0) return [];
+    return ProductModel.find({ companyId, _id: { $in: ids } }).exec();
+  },
+
   /** Listado paginado con filtros, búsqueda y orden seguros. */
   async list(companyId: string, query: ListProductsQueryInput): Promise<ProductListResult> {
     const filter = buildProductFilter(companyId, query);

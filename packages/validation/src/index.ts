@@ -8,3 +8,5 @@ export * from './user.schema.js';
 export * from './role.schema.js';
 export * from './category.schema.js';
 export * from './product.schema.js';
+export * from './warehouse.schema.js';
+export * from './inventory.schema.js';

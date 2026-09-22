@@ -96,6 +96,7 @@ Si alguna operación falla, no quedan datos parciales.
 | 6 | M01 Autenticación (login/refresh/logout/reset/cambio) | ✅ |
 | 7 | M02 Usuarios + M03 Roles/permisos (CRUD + RBAC completo) | ✅ |
 | 8 | M06 Categorías + M07 Productos (catálogo con SKU único e impuestos configurables) | ✅ |
-| 9–15 | Inventario, clientes/proveedores, ventas, compras, dashboard, reportes, auditoría | ⏳ |
+| 9 | M10 Almacenes + M11 Inventario (stock con movimientos inmutables `IN/OUT/ADJUSTMENT/TRANSFER/RETURN`) | ✅ |
+| 10–15 | Clientes/proveedores, ventas, compras, dashboard, reportes, auditoría | ⏳ |
 | 16 | Frontend web + móvil | ⏳ |
 | 17–20 | E2E, seguridad, optimización, docs, producción | ⏳ |

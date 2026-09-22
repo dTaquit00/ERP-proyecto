@@ -23,11 +23,14 @@ export interface TestContext {
   limitedRole: RoleDocument;
   /** Rol catálogo: categories.* + products.read (sin products.write) — Fase 8. */
   catalogRole: RoleDocument;
+  /** Rol almacén: warehouses.* + inventory.read/write (SIN inventory.transfer) — Fase 9. */
+  stockRole: RoleDocument;
   admin: UserDocument;
   inactiveUser: UserDocument;
   writerUser: UserDocument;
   limitedUser: UserDocument;
   catalogUser: UserDocument;
+  stockUser: UserDocument;
   otherCompanyAdmin: UserDocument;
   /** Categoría activa base de la empresa (para pruebas de productos). */
   baseCategory: CategoryDocument;
@@ -76,6 +79,14 @@ export async function setupTestContext(): Promise<TestContext> {
     name: 'catalogo',
     displayName: 'Catálogo',
     permissions: ['categories.read', 'categories.write', 'products.read'],
+    isSystem: false,
+  });
+
+  const stockRole = await RoleModel.create({
+    companyId: company.id,
+    name: 'almacenero',
+    displayName: 'Almacenero',
+    permissions: ['warehouses.read', 'warehouses.write', 'inventory.read', 'inventory.write'],
     isSystem: false,
   });
 
@@ -129,6 +140,16 @@ export async function setupTestContext(): Promise<TestContext> {
     isActive: true,
   });
 
+  const stockUser = await UserModel.create({
+    companyId: company.id,
+    email: 'stock@test.local',
+    passwordHash: await hashPassword(TEST_PASSWORD),
+    firstName: 'Santi',
+    lastName: 'Stock',
+    roleId: stockRole.id,
+    isActive: true,
+  });
+
   const otherCompanyAdmin = await UserModel.create({
     companyId: otherCompany.id,
     email: 'admin@other.local',
@@ -166,11 +187,13 @@ export async function setupTestContext(): Promise<TestContext> {
     writerRole,
     limitedRole,
     catalogRole,
+    stockRole,
     admin,
     inactiveUser,
     writerUser,
     limitedUser,
     catalogUser,
+    stockUser,
     otherCompanyAdmin,
     baseCategory,
     inactiveCategory,

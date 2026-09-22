@@ -5,6 +5,8 @@ import { rolesRoutes } from '../modules/roles/roles.routes.js';
 import { permissionsRoutes } from '../modules/permissions/permissions.routes.js';
 import { categoriesRoutes } from '../modules/categories/categories.routes.js';
 import { productsRoutes } from '../modules/products/products.routes.js';
+import { warehousesRoutes } from '../modules/warehouses/warehouses.routes.js';
+import { inventoryRoutes } from '../modules/inventory/inventory.routes.js';
 
 /** Router maestro bajo /api/v1 — aquí se montarán los módulos por fase. */
 export const apiRouter = Router();
@@ -15,3 +17,5 @@ apiRouter.use('/roles', rolesRoutes);
 apiRouter.use('/permissions', permissionsRoutes);
 apiRouter.use('/categories', categoriesRoutes);
 apiRouter.use('/products', productsRoutes);
+apiRouter.use('/warehouses', warehousesRoutes);
+apiRouter.use('/inventory', inventoryRoutes);

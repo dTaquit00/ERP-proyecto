@@ -75,6 +75,25 @@ Definición de "terminado" aplicada por fase.
 - [x] Lint correcto · TypeScript sin errores · 193/193 tests · `npm run build` OK
 - [x] Documentación actualizada (api, test-cases, test-plan, quality-checklist, requirements, architecture, database, security, README)
 
+## Fase 9 — Almacenes (M10) e Inventario (M11)
+
+- [x] Módulo completo `warehouses/`: model · repository · service · controller · routes · types · tests
+- [x] Módulo completo `inventory/`: misma estructura (dos modelos: `stock_balances` + `inventory_movements`)
+- [x] Endpoints: `GET/POST /warehouses`, `GET|PATCH /warehouses/:id`, `GET /warehouses/:id/inventory`, `GET /inventory/stock`, `GET|PATCH /inventory/stock/:id`, `GET /inventory/movements`, `GET /inventory/movements/:id`, `POST /inventory/movements`
+- [x] RBAC verificado en backend (`warehouses.read/write`, `inventory.read/write`) + `inventory.transfer` específico de TRANSFER (403 probado con rol sin él)
+- [x] **El stock nunca cambia sin movimiento**: cada cambio genera un registro inmutable con `quantityAfter` (actualización atómica con filtro `quantity >= q`; compensación si el insert falla — transacciones → Fase 11–12)
+- [x] Tipos de movimiento `IN OUT ADJUSTMENT TRANSFER RETURN` con reglas por tipo (ADJUSTMENT = recuento absoluto admite 0)
+- [x] Sin endpoints de edición/borrado de movimientos; campos clave `immutable: true` en el schema
+- [x] Reglas de negocio: `INSUFFICIENT_STOCK`, `WAREHOUSE_DISABLED` (ADJUSTMENT permitido para cierre), `WAREHOUSE_NOT_FOUND`, `PRODUCT_NOT_FOUND`, `NAME_IN_USE`
+- [x] Aislamiento multiempresa: stock/movimientos/almacenes de otra empresa → 404; FKs ajenos → 400
+- [x] Listados: paginación, filtros (`warehouseId`, `productId`, `type`, `availability`), `sort` con whitelist anti sort-injection
+- [x] `minStock` por existencia + `lowStock` derivado en backend (base de "stock bajo" del dashboard M14)
+- [x] `branchId` opcional con validación FK diferida a Fase 13 (M05 sucursales) — decisión documentada
+- [x] Nombres "foto" (almacén/producto/usuario) en el movimiento: histórico inmutable sin joins
+- [x] Pruebas: unitarias (schemas, `buildWarehouseFilter`, `buildStockFilter`, `buildMovementFilter`, `movementEffect`, mappers) + integración (13 almacenes + 18 inventario, con negativos)
+- [x] Lint correcto · TypeScript sin errores · 255/255 tests · `npm run build` OK
+- [x] Documentación actualizada (api, test-cases, test-plan, quality-checklist, requirements, architecture, database, security, README)
+
 ## Pendiente para fases siguientes
 
 - [ ] Auditoría (`audit_logs`) al confirmar operaciones empresariales — Fase 15

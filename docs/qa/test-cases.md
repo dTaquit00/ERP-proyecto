@@ -123,6 +123,47 @@ Formato: `TC-<módulo>-<número>` · Estado: ✅ aprobado · ⏳ pendiente · �
 | TC-PROD-013 | `PATCH` nombre+precio+impuestos y `isActive:false` | 200; el filtro `status=inactive` incluye el producto | ✅ |
 | TC-PROD-014 | `PATCH` vacío / SKU duplicado / categoría ajena / sin permisos / otra empresa | 400 / 409 `SKU_IN_USE` / 400 `CATEGORY_NOT_FOUND` / 403 / 404 | ✅ |
 
+## M10 — Almacenes (integración: `tests/integration/warehouses.integration.test.ts`)
+
+| ID | Descripción | Resultado esperado | Estado |
+|---|---|---|---|
+| TC-WH-001 | `GET /warehouses` sin token / sin `warehouses.read` | 401 `MISSING_TOKEN` / 403 `INSUFFICIENT_PERMISSIONS` | ✅ |
+| TC-WH-002 | Listado con rol almacenero (RBAC positivo) | 200, solo almacenes propios, sin datos ajenos ni `passwordHash` | ✅ |
+| TC-WH-003 | Filtro `status` y `search` con regex hostiles | `status=inactive` filtra; `search=(((` → 200 (regex escapada) | ✅ |
+| TC-WH-004 | Paginación y campos no permitidos | `page=2&limit=1` → `meta` coherente; `sort=passwordHash` → 400; `limit=5000` → 400 | ✅ |
+| TC-WH-005 | Detalle con dirección y sucursal | 200 con `address` (string) y `branchId: null` (`branchId` opcional, M05 → Fase 13) | ✅ |
+| TC-WH-006 | Otra empresa / `:id` inválido / inexistente | 404 / 400 `VALIDATION_ERROR` / 404 | ✅ |
+| TC-WH-007 | Creación con rol almacenero (RBAC positivo) | 201, nombre recortado, `isActive:true`, `companyId` propio | ✅ |
+| TC-WH-008 | Nombre duplicado en la empresa | 409 `NAME_IN_USE` | ✅ |
+| TC-WH-009 | Payload inválido / sin `warehouses.write` / sin token | 400 con `details[]` / 403 / 401 | ✅ |
+| TC-WH-010 | `PATCH` nombre+dirección y `isActive:false` | 200; el filtro `status=inactive` refleja el cambio; reactivación | ✅ |
+| TC-WH-011 | `PATCH` vacío / duplicado / sin permisos / otra empresa | 400 / 409 `NAME_IN_USE` / 403 / 404 | ✅ |
+| TC-WH-012 | `GET /:id/inventory` tras registrar un movimiento | 200 con la existencia real (`quantityAfter`) del producto | ✅ |
+| TC-WH-013 | `GET /:id/inventory` sin token / sin `inventory.read` / otra empresa | 401 / 403 / 404 | ✅ |
+
+## M11 — Inventario (integración: `tests/integration/inventory.integration.test.ts`)
+
+| ID | Descripción | Resultado esperado | Estado |
+|---|---|---|---|
+| TC-INV-001 | `GET /inventory/stock` y `/inventory/movements` sin token / sin `inventory.read` | 401 / 403 | ✅ |
+| TC-INV-002 | Listados iniciales aislados con rol almacenero (RBAC positivo) | 200, solo datos propios, sin secretos | ✅ |
+| TC-INV-003 | Movimiento `IN` | 201 con `quantityAfter` correcto y existencia creada/actualizada | ✅ |
+| TC-INV-004 | `IN` con `inventory.write` (RBAC positivo) | 201 y el resultado persistido en la existencia | ✅ |
+| TC-INV-005 | `OUT` con stock insuficiente | 409 `INSUFFICIENT_STOCK` y el stock no cambia | ✅ |
+| TC-INV-006 | `OUT` válido | 201, descuenta y refleja el stock resultante | ✅ |
+| TC-INV-007 | `RETURN` | 201, devuelve mercancía al almacén | ✅ |
+| TC-INV-008 | `ADJUSTMENT` | 201, fija el recuento absoluto (admite 0) | ✅ |
+| TC-INV-009 | `TRANSFER` sin `inventory.transfer` | 403 `INSUFFICIENT_PERMISSIONS` | ✅ |
+| TC-INV-010 | `TRANSFER` con `inventory.transfer` | 201, mueve stock: origen −, destino + | ✅ |
+| TC-INV-011 | Almacén desactivado | 409 `WAREHOUSE_DISABLED` para OUT/TRANSFER; ADJUSTMENT permitido | ✅ |
+| TC-INV-012 | Validación por tipo de movimiento | 400: cantidad ≥ 1 salvo ADJUSTMENT, destino solo en TRANSFER y distinto | ✅ |
+| TC-INV-013 | FKs de otra empresa o inexistentes | 400 `WAREHOUSE_NOT_FOUND` / `PRODUCT_NOT_FOUND` | ✅ |
+| TC-INV-014 | Filtros de movimientos (`type`, `warehouseId`) y `sort`/`limit` | resultados coherentes; `sort=productId` → 400; `limit=5000` → 400 | ✅ |
+| TC-INV-015 | `minStock` y `availability` (low / out_of_stock / in_stock) | `lowStock` derivado; 403 sin `inventory.write` para `minStock` | ✅ |
+| TC-INV-016 | `GET /stock/:id` inexistente/ajeno vs `:id` inválido | 404 / 400 `VALIDATION_ERROR` | ✅ |
+| TC-INV-017 | `GET /movements/:id` propio y aislamiento | 200 con snapshots; otra empresa → 404 | ✅ |
+| TC-INV-018 | Inmovilidad de movimientos | no existen PATCH/DELETE → 404; los documentos no se alteran | ✅ |
+
 ## Unitarias
 
 | ID | Archivo | Casos | Estado |
@@ -142,7 +183,10 @@ Formato: `TC-<módulo>-<número>` · Estado: ✅ aprobado · ⏳ pendiente · �
 | TC-UNIT-013 | `categories.repository.test.ts` | `buildCategoryFilter`: scope `companyId`, status, búsqueda escapada, regex hostil | ✅ |
 | TC-UNIT-014 | `products.repository.test.ts` | `buildProductFilter`: scope `companyId`, categoryId, status, búsqueda multi-campo escapada | ✅ |
 | TC-UNIT-015 | `products.service.test.ts` | `toProductSummary`: nombre de categoría, fallback `sin-categoría`, campos opcionales nulos, sin fugas de hash | ✅ |
+| TC-UNIT-016 | `warehouse.schema.test.ts` / `inventory.schema.test.ts` | schemas de almacén e inventario: enums de movimiento, cantidad por tipo, `availability`/`minStock`, sort/limit, claves desconocidas descartadas | ✅ |
+| TC-UNIT-017 | `warehouses.repository.test.ts` / `inventory.repository.test.ts` | filtros con scope `companyId` (status, type, warehouseId, búsqueda escapada, regex hostil) | ✅ |
+| TC-UNIT-018 | `inventory.service.test.ts` | `toMovementSummary`: snapshots de almacén/producto, `quantityAfter`, campos nulos, sin secretos | ✅ |
 
 ## Pendientes por fase
 
-⏳ Fase 9+: TC-INV-*, TC-SALE-*, TC-PUR-*… (ver test-plan.md)
+⏳ Fase 10+: TC-CUS-*, TC-SUP-*, TC-SALE-*, TC-PUR-*… (ver test-plan.md)

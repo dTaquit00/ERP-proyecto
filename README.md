@@ -14,10 +14,11 @@ Construido con **TypeScript estricto** en todo el stack:
 | Validación | Zod (schemas compartidos) |
 | Pruebas | Vitest + Supertest + mongodb-memory-server |
 
-> Estado actual: **Fase 8 completada** — monorepo, API base, seguridad, MongoDB,
-> autenticación (M01), usuarios (M02), roles/permisos (M03), categorías (M06) y
-> productos (M07), con RBAC verificado en backend y pruebas unitarias e de
-> integración. Los módulos restantes se construyen por fases según
+> Estado actual: **Fase 9 completada** — monorepo, API base, seguridad, MongoDB,
+> autenticación (M01), usuarios (M02), roles/permisos (M03), categorías (M06),
+> productos (M07), almacenes (M10), inventario (M11) con movimientos inmutables,
+> con RBAC verificado en backend y pruebas unitarias e de integración.
+> Los módulos restantes se construyen por fases según
 > `docs/requirements/requirements.md`.
 
 ---
@@ -149,7 +150,7 @@ Base: `/api/v1`. Convención completa en `docs/api/api.md`.
 
 Éxito: `{ "data": ... }` · Error: `{ "error": { "code", "message", "details?" } }`
 
-Endpoints (Fases 6–8):
+Endpoints (Fases 6–9):
 
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -171,15 +172,23 @@ Endpoints (Fases 6–8):
 | GET, PATCH | `/categories/:id` | Detalle / edición y alta-baja lógica (`isActive`); 409 `NAME_IN_USE` |
 | GET, POST | `/products` | Catálogo con `categoryName` y filtros (`products.read`/`products.write`) |
 | GET, PATCH | `/products/:id` | Detalle / edición; SKU único por empresa (409 `SKU_IN_USE`) |
+| GET, POST | `/warehouses` | Almacenes con filtros (`warehouses.read`/`warehouses.write`) |
+| GET, PATCH | `/warehouses/:id` | Detalle / edición y alta-baja lógica (`isActive`); 409 `NAME_IN_USE` |
+| GET | `/warehouses/:id/inventory` | Existencias reales del almacén (`inventory.read`) |
+| GET | `/inventory/stock` | Existencias con `minStock`, `lowStock` y `availability` |
+| GET, PATCH | `/inventory/stock/:id` | Detalle / recuento manual de una existencia (`inventory.write`) |
+| GET | `/inventory/movements` | Movimientos inmutables, filtros por tipo/almacén |
+| GET | `/inventory/movements/:id` | Detalle de movimiento (solo lectura: sin PATCH/DELETE) |
+| POST | `/inventory/movements` | Registrar `IN`/`OUT`/`RETURN`/`ADJUSTMENT`/`TRANSFER` (`inventory.transfer` extra para TRANSFER) |
 | GET | `/health` | Estado del servidor y de MongoDB |
 
 ## Base de datos
 
 Colecciones: `users`, `roles`, `companies`, `sessions`, `password_reset_tokens`
-(fase 6) y `categories`, `products` (fase 8); por fase, `branches`, `customers`,
-`suppliers`, `warehouses`, `stock_balances`, `inventory_movements`, `sales`,
-`purchases`, `cash_movements`, `audit_logs`. Detalle y justificación de cada
-relación en `docs/architecture/database.md`.
+(fase 6), `categories`, `products` (fase 8) y `warehouses`, `stock_balances`,
+`inventory_movements` (fase 9); por fase, `branches`, `customers`, `suppliers`,
+`sales`, `purchases`, `cash_movements`, `audit_logs`. Detalle y justificación de
+cada relación en `docs/architecture/database.md`.
 
 ## Seguridad
 

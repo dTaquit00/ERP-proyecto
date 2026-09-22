@@ -10,3 +10,5 @@ export * from './company.types.js';
 export * from './roles.types.js';
 export * from './category.types.js';
 export * from './product.types.js';
+export * from './warehouse.types.js';
+export * from './inventory.types.js';

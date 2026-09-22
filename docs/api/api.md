@@ -28,11 +28,11 @@ Error:
 |---|---|
 | 200 | Éxito |
 | 201 | Recurso creado |
-| 400 | Validación (`VALIDATION_ERROR`) o regla (`INVALID_RESET_TOKEN`, `ROLE_NOT_FOUND`, `SELF_DEACTIVATE`, `CATEGORY_NOT_FOUND`) |
+| 400 | Validación (`VALIDATION_ERROR`) o regla (`INVALID_RESET_TOKEN`, `ROLE_NOT_FOUND`, `SELF_DEACTIVATE`, `CATEGORY_NOT_FOUND`, `WAREHOUSE_NOT_FOUND`, `PRODUCT_NOT_FOUND`) |
 | 401 | No autenticado (`MISSING_TOKEN`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `INVALID_CREDENTIALS`, `SESSION_INVALID`, `REFRESH_TOKEN_MISSING`) |
 | 403 | Sin permisos (`INSUFFICIENT_PERMISSIONS`, `ACCOUNT_DISABLED`, `CURRENT_PASSWORD_INVALID`) |
 | 404 | `NOT_FOUND` (también recurso de otra empresa: no se filtra su existencia) |
-| 409 | `CONFLICT` / `DUPLICATE` / `EMAIL_IN_USE` / `ROLE_NAME_IN_USE` / `SYSTEM_ROLE` / `ROLE_IN_USE` / `LAST_ACTIVE_ADMIN` / `NAME_IN_USE` / `SKU_IN_USE` |
+| 409 | `CONFLICT` / `DUPLICATE` / `EMAIL_IN_USE` / `ROLE_NAME_IN_USE` / `SYSTEM_ROLE` / `ROLE_IN_USE` / `LAST_ACTIVE_ADMIN` / `NAME_IN_USE` / `SKU_IN_USE` / `WAREHOUSE_DISABLED` / `INSUFFICIENT_STOCK` |
 | 422 | Regla de negocio no procesable (reservado) |
 | 429 | `RATE_LIMITED` |
 | 500 | `INTERNAL_ERROR` (mensaje genérico; detalle solo en log) |
@@ -184,14 +184,62 @@ POST /api/v1/products
 
 ---
 
+## M10 — Almacenes
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/warehouses` | `warehouses.read` | Listado paginado. Query: `page, limit, search(nombre/dirección), status(active\|inactive), sort(name\|createdAt\|updatedAt), order`. |
+| GET | `/warehouses/:id` | `warehouses.read` | Detalle. Otra empresa → 404. |
+| POST | `/warehouses` | `warehouses.write` | `{name(2–80), address?, branchId?, isActive?}` → 201. 409 `NAME_IN_USE` (nombre único por empresa). |
+| PATCH | `/warehouses/:id` | `warehouses.write` | Edita `name/address/branchId/isActive`; `branchId: null` desvincula. Body no vacío (400). |
+| GET | `/warehouses/:id/inventory` | `inventory.read` | **Consultar inventario** del almacén: existencias paginadas (mismos filtros que `/inventory/stock`). Otra empresa → 404. |
+
+> `branchId` (M05 sucursales) es opcional: la validación FK se activa en Fase 13.
+> Sin borrado físico: la baja es `PATCH {"isActive": false}`.
+
+---
+
+## M11 — Inventario
+
+Regla central: **el stock nunca cambia sin generar un movimiento**; los movimientos
+son **inmutables** (solo `POST`, sin PATCH/DELETE) y registran `quantityAfter`.
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/inventory/stock` | `inventory.read` | Existencias `{items, meta}` con `warehouseName`, `productName/Sku`, `quantity`, `minStock`, `lowStock`. Query: `warehouseId, productId, availability(in_stock\|out_of_stock\|low), sort(quantity\|minStock\|updatedAt\|createdAt), order`. |
+| GET | `/inventory/stock/:id` | `inventory.read` | Detalle de existencia. Otra empresa → 404. |
+| PATCH | `/inventory/stock/:id` | `inventory.write` | `{minStock ≥ 0}` — umbral de "stock bajo" (dashboard M14). |
+| GET | `/inventory/movements` | `inventory.read` | Histórico paginado. Query: `warehouseId, productId, type(IN\|OUT\|ADJUSTMENT\|TRANSFER\|RETURN), sort(createdAt\|type\|quantity), order`. |
+| GET | `/inventory/movements/:id` | `inventory.read` | Detalle de movimiento. Otra empresa → 404. |
+| POST | `/inventory/movements` | `inventory.write` + (`inventory.transfer` si TRANSFER) | `{type, warehouseId, toWarehouseId?(TRANSFER), productId, quantity, reason?, documentRef?}` → 201 con `quantityAfter`. |
+
+Reglas de negocio:
+
+| Tipo | Cantidad | Efecto |
+|---|---|---|
+| `IN` | ≥ 1 | `+q` en el almacén |
+| `OUT` | ≥ 1 | `−q`; si no hay stock → 409 `INSUFFICIENT_STOCK` (filtro atómico: nunca negativo) |
+| `RETURN` | ≥ 1 | `+q` (devolución de venta) |
+| `ADJUSTMENT` | ≥ 0 | **recuento absoluto**: fija la cantidad (0 = dejar vacío) |
+| `TRANSFER` | ≥ 1 | `−q` en origen y `+q` en destino; exige `toWarehouseId` distinto y permiso `inventory.transfer` |
+
+- Almacén/producto referenciado debe existir en la **misma empresa** → 400 `WAREHOUSE_NOT_FOUND` / `PRODUCT_NOT_FOUND`.
+- Almacén `isActive:false` → 409 `WAREHOUSE_DISABLED` para IN/OUT/RETURN/TRANSFER; `ADJUSTMENT` sí está permitido (cierre/reconteo).
+- `quantityAfter` se calcula con una actualización atómica y se persiste el movimiento; si el insert falla se compensa el stock (transacciones multi-documento → Fase 11–12).
+
+```http
+POST /api/v1/inventory/movements
+{ "type": "TRANSFER", "warehouseId": "6660...", "toWarehouseId": "6661...",
+  "productId": "665f...", "quantity": 2, "reason": "Reposición sucursal" }
+```
+
+---
+
 ## Endpoints previstos (por fase)
 
 ```
 GET|POST            /customers            (Fase 10)
 GET|POST            /suppliers            (Fase 10)
-GET|POST            /warehouses           (Fase 9)
-GET                 /inventory/stock      (Fase 9)
-POST                /inventory/movements  (Fase 9)
 GET|POST            /sales                (Fase 11)
 POST                /sales/:id/confirm|cancel|return
 GET|POST            /purchases            (Fase 12)

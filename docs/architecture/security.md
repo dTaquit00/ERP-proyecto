@@ -1,8 +1,8 @@
 # Seguridad
 
-Estado: Fase 8 (autenticación + usuarios/roles + catálogo categorías/productos). Marco completo por fase en `docs/qa/quality-checklist.md`.
+Estado: Fase 9 (auth + usuarios/roles + catálogo + almacenes/inventario). Marco completo por fase en `docs/qa/quality-checklist.md`.
 
-## Implementado (Fase 4–8)
+## Implementado (Fase 4–9)
 
 ### Autenticación
 - Contraseñas con **scrypt** (`N=16384, r=8, p=1`, sal aleatoria de 16 bytes,
@@ -33,6 +33,10 @@ Estado: Fase 8 (autenticación + usuarios/roles + catálogo categorías/producto
 - Toda la entrada pasa por Zod (`parseOrThrow`) → 400 `VALIDATION_ERROR` con
   `details[]` por campo. Sin datos sanitizados por regex peligrosos; Mongoose evita
   la inyección NoSQL (los operadores `$` no llegan a las consultas como objetos).
+- **Stock seguro**: la descarga (`OUT`) usa un filtro condicional atómico
+  (`quantity >= q`), por lo que el stock nunca queda negativo bajo concurrencia;
+  si no hay existencias → 409 `INSUFFICIENT_STOCK`. Los movimientos de inventario
+  son inmutables (sin rutas de edición; campos clave `immutable: true`).
 - La búsqueda de listados escapa la regex de la entrada (`search` hostil →
   resultados vacíos, nunca errores ni patrones ampliados) y `sort` pasa por una
   whitelist Zod (anti sort-injection). Las claves desconocidas del body se

@@ -20,8 +20,8 @@ debe pasar la "Definición de terminado" (ver `docs/qa/quality-checklist.md`).
 | M07 | Productos | código, SKU (único por empresa), nombre, descripción, categoría, precio compra/venta, impuestos configurables, unidad, estado, imagen, código de barras; validaciones | 8 ✅ |
 | M08 | Clientes | Registrar, editar, consultar, desactivar, historial de compras | 10 |
 | M09 | Proveedores | Registrar, editar, consultar, desactivar, historial de compras | 10 |
-| M10 | Almacenes | Crear, asociar a sucursal, activar/desactivar, consultar inventario | 9 |
-| M11 | Inventario | Existencias, entradas, salidas, ajustes, transferencias, devoluciones, movimientos e historial. **Nunca modificar stock sin generar un movimiento** (`IN OUT ADJUSTMENT TRANSFER RETURN`) | 9 |
+| M10 | Almacenes | Crear, asociar a sucursal, activar/desactivar, consultar inventario | 9 ✅ |
+| M11 | Inventario | Existencias, entradas, salidas, ajustes, transferencias, devoluciones, movimientos e historial. **Nunca modificar stock sin generar un movimiento** (`IN OUT ADJUSTMENT TRANSFER RETURN`) | 9 ✅ |
 | M12 | Ventas | Crear, consultar, listar, buscar, confirmar, cancelar (permisos), devolución, historial. El **backend calcula el total**: cliente, usuario, productos, cantidades, precios, subtotal, impuestos, total, estado, fecha, sucursal, almacén | 11 |
 | M13 | Compras | Orden, consultar, confirmar, recibir mercancía (→ inventario), cancelar, devoluciones | 12 |
 | M14 | Dashboard | Ventas del día/mes, compras, stock bajo, agotados, clientes, proveedores, inventario, últimas ventas/compras. **Datos reales vía API, sin datos falsos** | 13 |
@@ -37,7 +37,7 @@ debe pasar la "Definición de terminado" (ver `docs/qa/quality-checklist.md`).
 6. Autenticación ✅
 7. Usuarios y permisos ✅
 8. Productos y categorías ✅
-9. Inventario
+9. Inventario ✅
 10. Clientes y proveedores
 11. Ventas
 12. Compras

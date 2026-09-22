@@ -16,11 +16,11 @@ npm run build      # compilación de producción
 
 | Nivel | Ubicación | Herramienta | Estado |
 |---|---|---|---|
-| Unitarias | junto al código (`apps/api/src/**/*.test.ts` y `packages/*/src/**/*.test.ts`) | Vitest | ✅ Fase 8 |
-| Integración API→service→MongoDB | `tests/integration/` | Vitest + Supertest + mongodb-memory-server | ✅ Fase 8 |
+| Unitarias | junto al código (`apps/api/src/**/*.test.ts` y `packages/*/src/**/*.test.ts`) | Vitest | ✅ Fase 9 |
+| Integración API→service→MongoDB | `tests/integration/` | Vitest + Supertest + mongodb-memory-server | ✅ Fase 9 |
 | E2E | `tests/e2e/` | API: Vitest+Supertest; web: Playwright; móvil: Detox | ⏳ Fase 17 |
 
-## Cobertura actual (Fase 8 — 193 pruebas: 97 unitarias + 96 de integración)
+## Cobertura actual (Fase 9 — 255 pruebas: 128 unitarias + 127 de integración)
 
 - Hash/verificación de contraseñas (scrypt), incluidos hashes malformados.
 - Firma/verificación de JWT: expirado, manipulado, `typ` incorrecto, incompleto.
@@ -60,6 +60,21 @@ npm run build      # compilación de producción
   duplicado (409 `SKU_IN_USE`), categoría ajena o inexistente
   (400 `CATEGORY_NOT_FOUND`), precios negativos / tasa >100 / unidad vacía /
   SKU inválido (400), edición de precios+impuestos+estado, aislamiento (404).
+- Almacenes: RBAC 401/403 (y positivo con rol almacenero), aislamiento
+  multiempresa (404), nombre duplicado (409 `NAME_IN_USE`), `search`/`status`/
+  paginación, `sort` no permitido (400), edición y alta/baja por `isActive`,
+  `branchId` opcional (M05 → Fase 13), y `GET /:id/inventory` con existencias
+  reales tras registrar un movimiento.
+- Inventario: RBAC 401/403 (lectura/escritura con rol almacenero), ciclo completo
+  `IN → OUT → RETURN → ADJUSTMENT → TRANSFER` con `quantityAfter` verificado en
+  la existencia, `INSUFFICIENT_STOCK` (409) sin alterar el stock,
+  `inventory.transfer` extra para TRANSFER (403 sin él), almacén desactivado
+  (409 `WAREHOUSE_DISABLED`; ADJUSTMENT permitido), validación por tipo
+  (cantidad ≥ 1 salvo ADJUSTMENT, destino solo en TRANSFER y distinto),
+  FKs ajenos/inexistentes (400 `WAREHOUSE_NOT_FOUND`/`PRODUCT_NOT_FOUND`),
+  filtros `type`/`warehouseId`/`availability(low|in_stock|out_of_stock)`,
+  `minStock` con `lowStock` derivado, `sort` no permitido (400),
+  inmovilidad de movimientos (sin PATCH/DELETE) y aislamiento (404).
 
 ## Casos negativos obligatorios por módulo nuevo
 
