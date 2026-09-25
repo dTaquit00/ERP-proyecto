@@ -9,8 +9,9 @@ import type { SaleDocument } from './sales.model.js';
 import type { ResolvedSaleItem, SaleActor, SaleCreatePersistInput } from './sales.types.js';
 import { customersRepository } from '../customers/customers.repository.js';
 import { productsRepository } from '../products/products.repository.js';
-import { requireWarehouseInCompany } from '../warehouses/warehouses.service.js';
+import { assertWarehouseBranch, requireWarehouseInCompany } from '../warehouses/warehouses.service.js';
 import { inventoryService } from '../inventory/inventory.service.js';
+import { requireBranchInCompany } from '../branches/branches.service.js';
 
 /** Redondeo monetario a 2 decimales. Puro: base de los cálculos unit-testeados. */
 export function roundMoney(value: number): number {
@@ -200,6 +201,9 @@ export const salesService = {
     }
 
     const warehouse = await requireWarehouseInCompany(companyId, input.warehouseId);
+    const branch = input.branchId ? await requireBranchInCompany(companyId, input.branchId) : undefined;
+    if (branch && !branch.isActive) throw new ConflictError('La sucursal está desactivada', 'BRANCH_DISABLED');
+    assertWarehouseBranch(warehouse, input.branchId);
     if (!warehouse.isActive) {
       throw new ConflictError('El almacén está desactivado', 'WAREHOUSE_DISABLED');
     }

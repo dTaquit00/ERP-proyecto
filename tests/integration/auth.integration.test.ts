@@ -45,6 +45,16 @@ describe('GET /api/v1/health', () => {
     expect(res.body.data.status).toBe('ok');
     expect(res.body.data.database).toBe('connected');
   });
+
+  it('expone liveness y readiness', async () => {
+    const live = await request(app).get('/api/v1/health/live');
+    expect(live.status).toBe(200);
+    expect(live.body.data.status).toBe('ok');
+
+    const ready = await request(app).get('/api/v1/health/ready');
+    expect(ready.status).toBe(200);
+    expect(ready.body.data.database).toBe('connected');
+  });
 });
 
 describe('POST /api/v1/auth/login', () => {

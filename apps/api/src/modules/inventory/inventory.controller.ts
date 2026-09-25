@@ -9,6 +9,7 @@ import {
 import { parseOrThrow } from '../../shared/http/parse.js';
 import { requireAuth } from '../../shared/http/auth-req.js';
 import { sendCreated, sendOk, sendPaginated } from '../../shared/http/response.js';
+import { ForbiddenError } from '../../shared/http/errors.js';
 import { inventoryService } from './inventory.service.js';
 
 export const inventoryController = {
@@ -52,6 +53,9 @@ export const inventoryController = {
   createMovement: (async (req: Request, res: Response) => {
     const auth = requireAuth(req);
     const input = parseOrThrow(createMovementSchema, req.body);
+    if (input.type === 'ADJUSTMENT' && !auth.permissions.includes('inventory.adjust')) {
+      throw new ForbiddenError('No tienes permiso para ajustar existencias', 'INSUFFICIENT_PERMISSIONS');
+    }
     const movement = await inventoryService.createMovement(auth.user.companyId, input, {
       id: auth.user.id,
       name: `${auth.user.firstName} ${auth.user.lastName}`.trim(),

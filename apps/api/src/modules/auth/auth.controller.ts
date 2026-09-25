@@ -84,7 +84,7 @@ export const authController = {
 
   requestPasswordReset: (async (req: Request, res: Response) => {
     const input = parseOrThrow(requestPasswordResetSchema, req.body);
-    const result = await authService.requestPasswordReset(input.email);
+    const result = await authService.requestPasswordReset(input.email, input.companyId);
     return sendOk(res, {
       message: 'Si el correo existe, se ha enviado un enlace de restablecimiento',
       ...result,

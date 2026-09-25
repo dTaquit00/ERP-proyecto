@@ -29,15 +29,18 @@ export const PERMISSIONS = [
   'warehouses.write',
   'inventory.read',
   'inventory.write',
+  'inventory.adjust',
   'inventory.transfer',
   // M12 — ventas
   'sales.read',
   'sales.write',
+  'sales.confirm',
   'sales.cancel',
   'sales.return',
   // M13 — compras
   'purchases.read',
   'purchases.write',
+  'purchases.confirm',
   'purchases.receive',
   'purchases.cancel',
   // M14 / M15 / M16 — dashboard, reportes, auditoría

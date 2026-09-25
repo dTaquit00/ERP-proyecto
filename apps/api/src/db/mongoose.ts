@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { setServers } from 'node:dns';
 import { env } from '../config/env.js';
 import { logger } from '../config/logger.js';
 
@@ -13,6 +14,11 @@ const STATE_LABELS: Record<number, DatabaseState> = {
 
 /** Conecta a MongoDB Atlas (o a cualquier URI compatible). Falla rápido si no hay conexión. */
 export async function connectDatabase(uri: string = env.MONGODB_URI): Promise<typeof mongoose> {
+  if (env.MONGODB_DNS_SERVERS) {
+    const servers = env.MONGODB_DNS_SERVERS.split(',').map((server) => server.trim()).filter(Boolean);
+    if (servers.length === 0) throw new Error('MONGODB_DNS_SERVERS no contiene resolvers válidos');
+    setServers(servers);
+  }
   const connection = await mongoose.connect(uri, {
     serverSelectionTimeoutMS: 10_000,
   });

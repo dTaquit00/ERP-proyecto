@@ -1,5 +1,5 @@
 import type { PaginationMeta, RoleResponse } from '@erp/types';
-import { isPermission } from '@erp/types';
+import { isPermission, type Permission } from '@erp/types';
 import type { CreateRoleInput, ListRolesQueryInput, UpdateRoleInput } from '@erp/validation';
 import { ConflictError, NotFoundError } from '../../shared/http/errors.js';
 import { logger } from '../../config/logger.js';
@@ -33,7 +33,18 @@ export const rolesService = {
   async ensureSystemRoles(companyId: string): Promise<void> {
     for (const systemRole of SYSTEM_ROLES) {
       const existing = await rolesRepository.findByName(companyId, systemRole.name);
-      if (existing) continue;
+      if (existing) {
+        // Migración aditiva de permisos nuevos al volver a ejecutar el seed;
+        // conserva cualquier permiso personalizado que ya tuviera el rol.
+        const newOperationPermissions: Permission[] = ['sales.confirm', 'purchases.confirm', 'inventory.adjust'];
+        const additions: Permission[] = systemRole.permissions.filter(
+          (permission) => newOperationPermissions.includes(permission) && !existing.permissions.includes(permission),
+        );
+        if (existing.isSystem && additions.length > 0) {
+          await rolesRepository.saveChanges(existing, { permissions: [...existing.permissions.filter(isPermission), ...additions] });
+        }
+        continue;
+      }
       await rolesRepository.create({
         companyId,
         name: systemRole.name,

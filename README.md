@@ -14,7 +14,7 @@ Construido con **TypeScript estricto** en todo el stack:
 | Validación | Zod (schemas compartidos) |
 | Pruebas | Vitest + Supertest + mongodb-memory-server |
 
-> Estado actual: **Fase 11 completada** — monorepo, API base, seguridad, MongoDB,
+> Estado actual: **Backend M01–M16 operativo; web con autenticación, routing, dashboard y listados; móvil con base Expo; CRUD web/móvil y E2E de negocio pendientes** — monorepo, API base, seguridad, MongoDB,
 > autenticación (M01), usuarios (M02), roles/permisos (M03), categorías (M06),
 > productos (M07), almacenes (M10), inventario (M11), clientes (M08),
 > proveedores (M09) y ventas (M12, con transacciones multi-documento), con RBAC
@@ -154,7 +154,7 @@ Base: `/api/v1`. Convención completa en `docs/api/api.md`.
 
 Éxito: `{ "data": ... }` · Error: `{ "error": { "code", "message", "details?" } }`
 
-Endpoints (Fases 6–11):
+Endpoints (Fases 6–13):
 
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -162,6 +162,8 @@ Endpoints (Fases 6–11):
 | POST | `/auth/refresh` | Rotación de sesión |
 | POST | `/auth/logout` | Revoca la sesión |
 | GET | `/auth/me` | Usuario autenticado + permisos |
+| GET, POST | `/companies` | Empresa del contexto / provisión controlada por `companies.write` |
+| GET, PATCH | `/companies/:id` | Detalle / edición con aislamiento multiempresa |
 | POST | `/auth/change-password` | Cambio de contraseña (revoca otras sesiones) |
 | POST | `/auth/request-password-reset` | Solicitud de restablecimiento |
 | POST | `/auth/reset-password` | Aplica el restablecimiento (un solo uso) |

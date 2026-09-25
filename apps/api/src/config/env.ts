@@ -1,4 +1,7 @@
+import dotenv from 'dotenv';
 import { z } from 'zod';
+
+dotenv.config({ path: new URL('../../../../.env', import.meta.url) });
 
 /**
  * Esquema de variables de entorno.
@@ -9,6 +12,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   MONGODB_URI: z.string().min(1, 'MONGODB_URI es obligatoria'),
+  // Opcional: resolvers DNS para consultas SRV/TXT de MongoDB cuando la red local no los resuelve.
+  MONGODB_DNS_SERVERS: z.string().optional(),
   JWT_ACCESS_SECRET: z
     .string()
     .min(16, 'JWT_ACCESS_SECRET debe tener al menos 16 caracteres'),
@@ -17,7 +22,8 @@ const envSchema = z.object({
     .min(16, 'JWT_REFRESH_SECRET debe tener al menos 16 caracteres'),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   REFRESH_TTL_DAYS: z.coerce.number().int().positive().default(14),
-  CORS_ORIGIN: z.string().min(1).default('http://localhost:3000'),
+  CORS_ORIGIN: z.string().min(1).default('http://localhost:5173,http://localhost:8081'),
+  PLATFORM_ADMIN_EMAIL: z.string().email().optional(),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
     .default('info'),
@@ -28,6 +34,13 @@ const envSchema = z.object({
   SEED_COMPANY_NAME: z.string().min(1).default('Empresa Demo'),
   SEED_ADMIN_EMAIL: z.string().min(3).default('admin@demo.local'),
   SEED_ADMIN_PASSWORD: z.string().default(''),
+}).superRefine((value, context) => {
+  if (value.JWT_ACCESS_SECRET === value.JWT_REFRESH_SECRET) {
+    context.addIssue({ code: 'custom', path: ['JWT_REFRESH_SECRET'], message: 'Debe ser distinto de JWT_ACCESS_SECRET' });
+  }
+  if (value.NODE_ENV === 'production' && value.CORS_ORIGIN.includes('localhost')) {
+    context.addIssue({ code: 'custom', path: ['CORS_ORIGIN'], message: 'Producción no puede usar localhost como origen CORS' });
+  }
 });
 
 export type Env = z.infer<typeof envSchema>;

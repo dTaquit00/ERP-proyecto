@@ -1,4 +1,5 @@
 import type { Permission } from '@erp/types';
+import { Types } from 'mongoose';
 import { RoleModel, type RoleDocument } from './roles.model.js';
 
 export interface RoleCreateInput {
@@ -17,6 +18,10 @@ export interface RoleFieldChanges {
 export const rolesRepository = {
   async findById(id: string): Promise<RoleDocument | null> {
     return RoleModel.findById(id).exec();
+  },
+
+  async findByIdInCompany(companyId: string, id: string): Promise<RoleDocument | null> {
+    return RoleModel.findOne({ _id: new Types.ObjectId(id), companyId: new Types.ObjectId(companyId) }).exec();
   },
 
   async findByName(companyId: string, name: string): Promise<RoleDocument | null> {

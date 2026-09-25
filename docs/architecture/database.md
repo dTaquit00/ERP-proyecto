@@ -24,6 +24,10 @@
 
 Índice: `{name}`.
 
+En el contexto autenticado, el `companyId` del usuario coincide con el `_id` de esta
+colección; por eso el service solo permite consultar o modificar el registro cuyo ID
+coincide con el contexto y no acepta un `companyId` enviado por el cliente.
+
 ### roles (RBAC)
 | Campo | Tipo | Notas |
 |---|---|---|

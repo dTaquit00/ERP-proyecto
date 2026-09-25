@@ -46,7 +46,10 @@ async function buildAuthResult(
   user: UserDocument,
   sessionSid: string,
 ): Promise<AuthResult> {
-  const role = await rolesRepository.findById(user.roleId.toString());
+  const role = await rolesRepository.findByIdInCompany(
+    user.companyId.toString(),
+    user.roleId.toString(),
+  );
   if (!role) {
     logger.error({ userId: user.id, roleId: String(user.roleId) }, 'Rol inexistente al autenticar');
     throw new InternalError('La configuración del usuario no es válida');
@@ -72,8 +75,8 @@ export const authService = {
    * Respuesta idéntica para correo inexistente y contraseña incorrecta (sin enumeración).
    */
   async login(input: LoginInput, ctx: RequestContext): Promise<AuthResult> {
-    const candidates = await usersRepository.findCandidatesByEmail(input.email);
-    let matched: UserDocument | null = null;
+    const candidates = await usersRepository.findCandidatesByEmail(input.email, input.companyId);
+    const matches: UserDocument[] = [];
 
     if (candidates.length === 0) {
       // Equaliza el tiempo de respuesta cuando el correo no existe.
@@ -81,17 +84,18 @@ export const authService = {
     } else {
       for (const candidate of candidates) {
         const ok = await verifyPassword(input.password, candidate.passwordHash);
-        if (ok) {
-          matched = candidate;
-          break;
-        }
+        if (ok) matches.push(candidate);
       }
     }
 
-    if (!matched) {
+    if (matches.length === 0) {
       logger.warn({ email: input.email, ip: ctx.ip }, 'Login fallido: credenciales inválidas');
       throw new AuthError('Correo o contraseña incorrectos', 'INVALID_CREDENTIALS');
     }
+    if (!input.companyId && matches.length > 1) {
+      throw new AuthError('Indica el ID de la empresa para iniciar sesión', 'COMPANY_REQUIRED');
+    }
+    const matched = matches[0]!;
     if (!matched.isActive) {
       logger.warn({ userId: matched.id, ip: ctx.ip }, 'Login bloqueado: cuenta desactivada');
       throw new ForbiddenError('La cuenta está desactivada', 'ACCOUNT_DISABLED');
@@ -192,11 +196,13 @@ export const authService = {
    * Siempre responde 200 (no revela si el correo existe).
    * Solo fuera de producción se devuelve `resetToken` (en producción el envío sería por correo).
    */
-  async requestPasswordReset(email: string): Promise<{ resetToken?: string }> {
-    const candidates = await usersRepository.findCandidatesByEmail(email);
-    const user = candidates.find((candidate) => candidate.isActive);
+  async requestPasswordReset(email: string, companyId?: string): Promise<{ resetToken?: string }> {
+    const candidates = (await usersRepository.findCandidatesByEmail(email, companyId))
+      .filter((candidate) => candidate.isActive);
+    // No emitir un enlace para una cuenta arbitraria cuando el correo se comparte entre empresas.
+    const user = candidates.length === 1 ? candidates[0] : undefined;
     if (!user) {
-      logger.info({ email }, 'Solicitud de restablecimiento para cuenta inexistente o inactiva');
+      logger.info({ email, ambiguous: candidates.length > 1 }, 'Solicitud de restablecimiento para cuenta inexistente, inactiva o ambigua');
       return {};
     }
 

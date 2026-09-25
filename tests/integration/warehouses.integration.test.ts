@@ -9,6 +9,7 @@ import {
   type TestContext,
 } from '../helpers/integration.js';
 import { WarehouseModel } from '../../apps/api/src/modules/warehouses/warehouses.model.js';
+import { BranchModel } from '../../apps/api/src/modules/branches/branches.model.js';
 
 let ctx: TestContext;
 let app: Express;
@@ -24,6 +25,7 @@ let foreignWarehouseId: string;
 /** Almacén creado vía API en la suite (sujeto de edición). */
 let tempWarehouseId: string;
 let productId: string;
+let branchId: string;
 
 async function login(email: string): Promise<string> {
   const res = await request(app)
@@ -39,6 +41,13 @@ beforeAll(async () => {
   adminToken = await login('admin@test.local');
   stockToken = await login('stock@test.local');
   limitedToken = await login('limited@test.local');
+
+  const branch = await BranchModel.create({
+    companyId: ctx.company.id,
+    code: 'BASE',
+    name: 'Sucursal Base',
+  });
+  branchId = branch.id;
 
   const base = await WarehouseModel.create({
     companyId: ctx.company.id,
@@ -175,7 +184,7 @@ describe('GET /api/v1/warehouses/:id', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.name).toBe('Base');
     expect(res.body.data.address).toBe('Calle Mayor 1');
-    expect(res.body.data.branchId).toBeNull(); // M05 llega en Fase 13
+    expect(res.body.data.branchId).toBeNull();
     expect(res.body.data.isActive).toBe(true);
   });
 
@@ -207,7 +216,7 @@ describe('POST /api/v1/warehouses — creación', () => {
       .send({
         name: '  Principal ',
         address: ' Av. Central 100 ',
-        branchId: new Types.ObjectId().toString(),
+        branchId,
       });
 
     expect(res.status).toBe(201);

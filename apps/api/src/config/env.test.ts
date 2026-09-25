@@ -44,6 +44,18 @@ describe('parseEnv', () => {
   it('rechaza un PORT no numérico', () => {
     expect(() => parseEnv({ ...baseEnv, PORT: 'ochenta' })).toThrow(/PORT/);
   });
+
+  it('rechaza secretos JWT iguales', () => {
+    expect(() => parseEnv({ ...baseEnv, JWT_REFRESH_SECRET: baseEnv.JWT_ACCESS_SECRET })).toThrow(
+      /JWT_REFRESH_SECRET/,
+    );
+  });
+
+  it('rechaza CORS localhost en producción', () => {
+    expect(() => parseEnv({ ...baseEnv, NODE_ENV: 'production', CORS_ORIGIN: 'http://localhost:5173' })).toThrow(
+      /CORS_ORIGIN/,
+    );
+  });
 });
 
 describe('corsOrigins', () => {

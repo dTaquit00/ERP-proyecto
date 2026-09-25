@@ -11,6 +11,6 @@ salesRoutes.use(authenticate);
 salesRoutes.get('/', authorize('sales.read'), salesController.list);
 salesRoutes.get('/:id', authorize('sales.read'), salesController.get);
 salesRoutes.post('/', authorize('sales.write'), salesController.create);
-salesRoutes.post('/:id/confirm', authorize('sales.write'), salesController.confirm);
+salesRoutes.post('/:id/confirm', authorize('sales.confirm'), salesController.confirm);
 salesRoutes.post('/:id/cancel', authorize('sales.cancel'), salesController.cancel);
 salesRoutes.post('/:id/return', authorize('sales.return'), salesController.returnSale);

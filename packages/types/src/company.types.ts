@@ -8,6 +8,7 @@ export interface CompanySummary {
   email?: string | null;
   address?: string | null;
   status: 'active' | 'inactive';
+  settings?: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
 }

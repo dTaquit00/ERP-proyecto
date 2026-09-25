@@ -29,7 +29,10 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
       throw new ForbiddenError('La cuenta está desactivada', 'ACCOUNT_DISABLED');
     }
 
-    const role = await rolesRepository.findById(user.roleId.toString());
+    const role = await rolesRepository.findByIdInCompany(
+      user.companyId.toString(),
+      user.roleId.toString(),
+    );
     if (!role) {
       throw new InternalError('La configuración de permisos del usuario no existe');
     }

@@ -1,7 +1,9 @@
-import { sign, verify as verifyJwt, TokenExpiredError, JsonWebTokenError } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import type { AccessTokenPayload } from '@erp/types';
 import { env } from '../../config/env.js';
 import { AuthError } from '../http/errors.js';
+
+const { sign, verify: verifyJwt, TokenExpiredError, JsonWebTokenError } = jwt;
 
 /** Firma un access token de corta duración ligado a la sesión. */
 export function signAccessToken(

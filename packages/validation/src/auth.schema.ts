@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { emailSchema, passwordSchema } from './common.schema.js';
+import { emailSchema, idSchema, passwordSchema } from './common.schema.js';
 
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, 'La contraseña es obligatoria').max(128),
+  companyId: idSchema.optional(),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
@@ -15,6 +16,7 @@ export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
 export const requestPasswordResetSchema = z.object({
   email: emailSchema,
+  companyId: idSchema.optional(),
 });
 export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchema>;
 

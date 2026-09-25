@@ -9,6 +9,7 @@ import { apiRateLimiter } from './shared/middleware/rate-limit.js';
 import { errorHandler, notFoundHandler } from './shared/http/error-handler.js';
 import { apiRouter } from './routes/api.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
+import { auditRequestMiddleware } from './modules/audit/audit.middleware.js';
 
 /**
  * Fabrica la app Express sin efectos secundarios (sin escuchar puertos ni conectar BD),
@@ -42,6 +43,7 @@ export function createApp(): Express {
   app.use('/api/v1/health', healthRoutes);
 
   app.use(apiRateLimiter);
+  app.use(auditRequestMiddleware);
   app.use('/api/v1', apiRouter);
 
   app.use(notFoundHandler);

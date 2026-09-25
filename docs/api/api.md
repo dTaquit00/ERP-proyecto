@@ -51,6 +51,8 @@ El cliente debe enviar `credentials: 'include'` (CORS está configurado con `cre
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
 | GET | `/health` | no | Estado: `{ status: ok\|degraded, database, uptimeSeconds, timestamp }` (sin rate limit) |
+| GET | `/health/live` | no | Liveness de la API, no depende de MongoDB. |
+| GET | `/health/ready` | no | Readiness; devuelve `503` si MongoDB no está conectado. |
 
 ---
 
@@ -58,12 +60,12 @@ El cliente debe enviar `credentials: 'include'` (CORS está configurado con `cre
 
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-| POST | `/auth/login` | no | Login. Body `{email, password}` → `{user, accessToken, expiresIn}` + cookie refresh. |
+| POST | `/auth/login` | no | Login. Body `{email, password, companyId?}` → `{user, accessToken, expiresIn}` + cookie refresh. `companyId` resuelve correos con credenciales coincidentes en varias empresas. |
 | POST | `/auth/refresh` | cookie | Rota el refresh token y emite un access token nuevo. |
 | POST | `/auth/logout` | cookie | Revoca la sesión (idempotente) y limpia la cookie. |
 | GET | `/auth/me` | Bearer | Usuario autenticado + permisos del rol. |
 | POST | `/auth/change-password` | Bearer | `{currentPassword, newPassword}`. Revoca las demás sesiones. |
-| POST | `/auth/request-password-reset` | no | `{email}` → siempre 200. Solo fuera de producción devuelve `resetToken`. |
+| POST | `/auth/request-password-reset` | no | `{email, companyId?}` → siempre 200. Si el correo corresponde a más de una cuenta activa, se requiere `companyId`; el envío por correo aún debe configurarse en producción. |
 | POST | `/auth/reset-password` | no | `{token, newPassword}` → un solo uso; revoca todas las sesiones. |
 
 ### Ejemplo — login
@@ -72,7 +74,7 @@ El cliente debe enviar `credentials: 'include'` (CORS está configurado con `cre
 POST /api/v1/auth/login
 Content-Type: application/json
 
-{ "email": "admin@demo.local", "password": "..." }
+{ "email": "admin@demo.local", "password": "...", "companyId": "<opcional>" }
 ```
 
 ```json
@@ -134,6 +136,58 @@ Todos exigen `Authorization: Bearer` y RBAC en backend. Scope: siempre la empres
 
 > Los 7 roles del sistema (`administrador, gerente, vendedor, almacen, compras, finanzas, auditor`)
 > se crean idempotentemente por empresa vía `rolesService.ensureSystemRoles` (seed y pruebas).
+
+## M04 — Empresas
+
+Todas las lecturas y actualizaciones usan la empresa del contexto autenticado. Un ID
+de otra empresa responde `404` para no revelar su existencia.
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/companies` | `companies.read` | Lista la empresa del usuario con paginación estándar. |
+| GET | `/companies/:id` | `companies.read` | Detalle de nombre, razón social, identificación fiscal, contacto, estado y configuración. |
+| POST | `/companies` | `companies.write` | Provisión de una empresa. Body `{name, legalName?, taxId?, phone?, email?, address?, status?, settings?}`. |
+| PATCH | `/companies/:id` | `companies.write` | Actualiza campos permitidos; el body no puede estar vacío. |
+
+Los nombres duplicados responden `409 NAME_IN_USE`. La configuración es un objeto JSON
+validado por Zod y nunca contiene credenciales ni tokens.
+
+## M05 — Sucursales
+
+Todas las operaciones están aisladas por el `companyId` del usuario autenticado.
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/branches` | `branches.read` | Listado paginado con filtros `search` y `status`. |
+| GET | `/branches/:id` | `branches.read` | Detalle; otra empresa responde `404`. |
+| POST | `/branches` | `branches.write` | Crea sucursal con `code`, `name`, contacto, responsable y estado. |
+| PATCH | `/branches/:id` | `branches.write` | Edita campos permitidos; `code` es único por empresa. |
+
+## M13 — Compras
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/purchases` | `purchases.read` | Listado paginado por estado, proveedor o almacén. |
+| GET | `/purchases/:id` | `purchases.read` | Detalle con snapshots e historial. |
+| POST | `/purchases` | `purchases.write` | Crea compra pendiente; backend calcula importes. |
+| POST | `/purchases/:id/confirm` | `purchases.confirm` | Confirma la orden. |
+| POST | `/purchases/:id/receive` | `purchases.receive` | Recibe parcial o totalmente y crea movimientos `IN` en transacción. Reutiliza `Idempotency-Key` al reintentar la misma recepción. |
+| POST | `/purchases/:id/cancel` | `purchases.cancel` | Cancela una compra pendiente o confirmada. |
+| POST | `/purchases/:id/return` | `purchases.receive` | Devuelve lo recibido mediante movimientos `OUT`. |
+
+## M14-M16 — Dashboard, reportes y auditoría
+
+`GET /dashboard/summary` devuelve métricas reales scoped por empresa y admite
+`branchId`/`warehouseId`. `GET /reports/:type.csv` exporta ventas, compras,
+inventario, movimientos, productos, clientes o proveedores con filtros de fecha,
+sucursal, almacén y referencias, límite de 5.000 filas y escape contra CSV injection.
+`GET /reports/:type.pdf` genera el mismo reporte como PDF desde el servicio de exportación.
+En ventas y compras, `productId` se aplica dentro de `items[]`; `userId` se aplica
+en la cabecera y `categoryId` está disponible para el reporte de productos.
+
+`GET /audit-logs` y `GET /audit-logs/:id` requieren `audit.read`. Las mutaciones
+autenticadas generan automáticamente un registro con usuario, recurso, resultado,
+IP y agente; nunca se registran contraseñas ni tokens.
 
 ---
 
@@ -244,7 +298,7 @@ son **inmutables** (solo `POST`, sin PATCH/DELETE) y registran `quantityAfter`.
 | PATCH | `/inventory/stock/:id` | `inventory.write` | `{minStock ≥ 0}` — umbral de "stock bajo" (dashboard M14). |
 | GET | `/inventory/movements` | `inventory.read` | Histórico paginado. Query: `warehouseId, productId, type(IN\|OUT\|ADJUSTMENT\|TRANSFER\|RETURN), sort(createdAt\|type\|quantity), order`. |
 | GET | `/inventory/movements/:id` | `inventory.read` | Detalle de movimiento. Otra empresa → 404. |
-| POST | `/inventory/movements` | `inventory.write` + (`inventory.transfer` si TRANSFER) | `{type, warehouseId, toWarehouseId?(TRANSFER), productId, quantity, reason?, documentRef?}` → 201 con `quantityAfter`. |
+| POST | `/inventory/movements` | `inventory.write` + `inventory.transfer` (TRANSFER) / `inventory.adjust` (ADJUSTMENT) | `{type, warehouseId, toWarehouseId?(TRANSFER), productId, quantity, reason?, documentRef?}` → 201 con `quantityAfter`. |
 
 Reglas de negocio:
 
@@ -279,7 +333,7 @@ unitario **nunca** proviene del cliente (las claves desconocidas del body se des
 | GET | `/sales` | `sales.read` | Listado paginado. Query: `page, limit, search(cliente/producto/SKU sobre snapshots), status(pending\|confirmed\|cancelled\|returned), customerId, warehouseId, dateFrom, dateTo (días calendario UTC inclusivos), sort(saleDate\|total\|createdAt\|updatedAt), order`. |
 | GET | `/sales/:id` | `sales.read` | Detalle con `items[]`, `history[]` de transiciones y snapshots. Otra empresa → 404. |
 | POST | `/sales` | `sales.write` | `{customerId, warehouseId, branchId?, saleDate?(ISO), notes?, items:[{productId, quantity ≥ 1, discount? (0–100 %)}]}` → 201 en `pending`; 1–100 líneas y sin producto repetido. |
-| POST | `/sales/:id/confirm` | `sales.write` | `pending → confirmed` + movimientos `OUT` por ítem **en una transacción**: sin stock → 409 `INSUFFICIENT_STOCK` y rollback total (venta sigue `pending`). |
+| POST | `/sales/:id/confirm` | `sales.confirm` | `pending → confirmed` + movimientos `OUT` por ítem **en una transacción**: sin stock → 409 `INSUFFICIENT_STOCK` y rollback total (venta sigue `pending`). |
 | POST | `/sales/:id/cancel` | `sales.cancel` | `pending → cancelled` (sin tocar stock) o `confirmed → cancelled` (restock con `RETURN`), en transacción. |
 | POST | `/sales/:id/return` | `sales.return` | Devolución `confirmed → returned` + restock `RETURN`, en transacción. |
 

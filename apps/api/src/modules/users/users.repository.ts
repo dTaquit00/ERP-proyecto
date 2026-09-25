@@ -53,8 +53,8 @@ export const usersRepository = {
    * En multiempresa el mismo correo puede existir en varias empresas:
    * el servicio verifica la contraseña contra cada candidato.
    */
-  async findCandidatesByEmail(email: string): Promise<UserDocument[]> {
-    return UserModel.find({ email })
+  async findCandidatesByEmail(email: string, companyId?: string): Promise<UserDocument[]> {
+    return UserModel.find({ email, ...(companyId ? { companyId: new Types.ObjectId(companyId) } : {}) })
       .select('+passwordHash')
       .limit(5)
       .exec();

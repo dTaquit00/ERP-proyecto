@@ -8,6 +8,15 @@ import { BadRequestError, ConflictError, NotFoundError } from '../../shared/http
 import { logger } from '../../config/logger.js';
 import { warehousesRepository } from './warehouses.repository.js';
 import type { WarehouseDocument } from './warehouses.model.js';
+import { requireBranchInCompany } from '../branches/branches.service.js';
+
+/** Evita asignar un documento a una sucursal distinta de la del almacén. */
+export function assertWarehouseBranch(warehouse: WarehouseDocument, branchId?: string): void {
+  const warehouseBranchId = warehouse.branchId?.toString();
+  if (warehouseBranchId !== branchId) {
+    throw new ConflictError('La sucursal de la operación debe coincidir con la sucursal del almacén', 'WAREHOUSE_BRANCH_MISMATCH');
+  }
+}
 
 export function toWarehouseResponse(warehouse: WarehouseDocument): WarehouseResponse {
   return {
@@ -89,6 +98,7 @@ export const warehousesService = {
     actorId: string,
   ): Promise<WarehouseResponse> {
     await requireNameAvailable(companyId, input.name);
+    if (input.branchId) await requireBranchInCompany(companyId, input.branchId);
     const warehouse = await warehousesRepository.create({ companyId, ...input });
     logger.info({ warehouseId: warehouse.id, actorId, companyId }, 'Almacén creado');
     return toWarehouseResponse(warehouse);
@@ -101,6 +111,7 @@ export const warehousesService = {
     actorId: string,
   ): Promise<WarehouseResponse> {
     const warehouse = await findScopedOr404(companyId, id);
+    if (input.branchId) await requireBranchInCompany(companyId, input.branchId);
     if (input.name !== undefined && input.name !== warehouse.name) {
       await requireNameAvailable(companyId, input.name, warehouse.id);
     }
