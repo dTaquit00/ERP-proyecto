@@ -34,3 +34,5 @@ Thumbs.db
 
 # Tests
 .vitest/
+test-results/
+playwright-report/
