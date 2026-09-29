@@ -29,6 +29,7 @@ coverage/
 # Editores / SO
 .vscode/
 .idea/
+.expo/
 .DS_Store
 Thumbs.db
 

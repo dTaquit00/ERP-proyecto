@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: data-erp-api
+    runtime: node
+    region: ohio
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:api
+    healthCheckPath: /api/v1/health/ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false

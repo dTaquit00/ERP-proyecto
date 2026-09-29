@@ -21,6 +21,9 @@ export async function connectDatabase(uri: string = env.MONGODB_URI): Promise<ty
   }
   const connection = await mongoose.connect(uri, {
     serverSelectionTimeoutMS: 10_000,
+    // La lista de acceso de Atlas autoriza la IPv4 actual y esta red ha
+    // presentado problemas resolviendo/conectando por IPv6.
+    family: 4,
   });
   logger.info('Conexión a MongoDB establecida');
   return connection;

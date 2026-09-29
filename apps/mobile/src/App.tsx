@@ -41,7 +41,7 @@ function Login({ onLogin }: { onLogin: () => void }) {
 
   return (
     <SafeAreaView style={styles.login}>
-      <Text style={styles.logo}>NEXUS</Text>
+      <View style={styles.brand}><View style={styles.brandMark}><Text style={styles.brandMarkText}>D</Text></View><Text style={styles.logo}>DATA ERP</Text></View>
       <Text style={styles.title}>Operación en movimiento.</Text>
       <TextInput style={styles.input} placeholder="Correo" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
       <TextInput style={styles.input} placeholder="Contraseña" secureTextEntry value={password} onChangeText={setPassword} />
@@ -124,7 +124,7 @@ function App() {
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.logo}>NEXUS ERP</Text>
+        <View style={styles.brand}><View style={styles.brandMark}><Text style={styles.brandMarkText}>D</Text></View><Text style={styles.logo}>DATA ERP</Text></View>
         <Text style={styles.title}>{moduleKey === 'dashboard' ? 'Resumen' : MODULES[moduleKey].title}</Text>
         {moduleKey === 'dashboard' ? (
           <>
@@ -151,7 +151,10 @@ const styles = StyleSheet.create({
   content: { padding: 24, paddingBottom: 40 },
   login: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#f7f5ed' },
   loading: { flex: 1, textAlign: 'center', paddingTop: 100, color: '#1d493d' },
-  logo: { fontWeight: '700', letterSpacing: 2, color: '#1d493d', fontSize: 16 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandMark: { width: 36, height: 36, borderRadius: 11, backgroundColor: '#712cf9', borderWidth: 3, borderColor: '#ffbe55', alignItems: 'center', justifyContent: 'center' },
+  brandMarkText: { color: '#fff', fontSize: 21, fontWeight: '800' },
+  logo: { fontWeight: '800', letterSpacing: 2, color: '#090b24', fontSize: 16 },
   title: { fontSize: 32, fontWeight: '700', color: '#18221f', marginTop: 18 },
   subtitle: { color: '#758078', marginTop: 8 },
   input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ccd8cf', padding: 14, marginTop: 16 },
