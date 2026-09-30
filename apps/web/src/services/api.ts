@@ -1,4 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api/v1';
+// En producción, Pages reenvía /api/* a Render mediante la Pages Function.
+// Mantiene el mismo origen para evitar CORS y no caer en localhost si falta env.
+const API_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
 let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 

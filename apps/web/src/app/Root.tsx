@@ -3,6 +3,7 @@ import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation, useN
 import { AuthProvider, useAuth, useResource } from '../auth/AuthProvider';
 import { apiRequest, downloadReport } from '../services/api';
 import '../ui.css';
+import '../theme.css';
 
 type Row = Record<string, unknown>;
 const resources: Record<string, { label: string; endpoint: string; permission: string; searchable?: boolean }> = {
