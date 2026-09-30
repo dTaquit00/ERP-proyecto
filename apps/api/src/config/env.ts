@@ -23,6 +23,9 @@ const envSchema = z.object({
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
   REFRESH_TTL_DAYS: z.coerce.number().int().positive().default(14),
   CORS_ORIGIN: z.string().min(1).default('http://localhost:5173,http://localhost:8081'),
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM: z.string().min(1).default('DATA ERP <onboarding@resend.dev>'),
+  WEB_APP_URL: z.string().url().default('https://erp-proyecto.pages.dev'),
   PLATFORM_ADMIN_EMAIL: z.string().email().optional(),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])

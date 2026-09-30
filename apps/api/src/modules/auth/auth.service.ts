@@ -11,6 +11,7 @@ import type { UserDocument } from '../users/users.model.js';
 import { rolesRepository } from '../roles/roles.repository.js';
 import { sessionsRepository } from './auth.sessions.repository.js';
 import { passwordResetRepository } from './auth.password-reset.repository.js';
+import { sendPasswordResetEmail } from '../../shared/email/resend.js';
 import type { AuthContext, AuthResult, RequestContext } from './auth.types.js';
 
 const REFRESH_TOKEN_BYTES = 48;
@@ -212,6 +213,12 @@ export const authService = {
 
     if (env.NODE_ENV !== 'production') {
       return { resetToken: token };
+    }
+    try {
+      await sendPasswordResetEmail(user.email, user.firstName, token);
+    } catch (error) {
+      // Keep the response identical for known and unknown addresses.
+      logger.error({ userId: user.id, err: error }, 'No se pudo entregar el correo de restablecimiento');
     }
     return {};
   },
