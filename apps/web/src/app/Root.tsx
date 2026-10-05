@@ -48,12 +48,63 @@ function ResetPasswordPage() {
   return <main className="login-shell"><form className="login-card" onSubmit={(event) => void submit(event)}><img className="brand-logo" src="/data-erp-logo.svg" alt="DATA ERP" /><h1>Nueva contraseña</h1><p className="muted">Elige una contraseña segura para tu cuenta.</p>{token ? <label>Nueva contraseña<input type="password" minLength={12} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /></label> : <p className="error">El enlace no contiene un token válido.</p>}{message && <p className="success">{message} <Link to="/login">Iniciar sesión</Link></p>}{error && <p className="error">{error}</p>}{token && !message && <button className="primary" disabled={saving}>{saving ? 'Guardando…' : 'Cambiar contraseña'}</button>}</form></main>;
 }
 
-function Shell() { const { user, loading, logout, can } = useAuth(); const location = useLocation(); if (loading) return <div className="loading">Cargando espacio de trabajo...</div>; if (!user) return <Navigate to="/login" replace />; const links = [['/dashboard', 'Dashboard', true], ['/products', 'Productos', can('products.read')], ['/categories', 'Categorías', can('categories.read')], ['/customers', 'Clientes', can('customers.read')], ['/suppliers', 'Proveedores', can('suppliers.read')], ['/warehouses', 'Almacenes', can('warehouses.read')], ['/branches', 'Sucursales', can('branches.read')], ['/inventory', 'Inventario', can('inventory.read')], ['/sales', 'Ventas', can('sales.read')], ['/purchases', 'Compras', can('purchases.read')], ['/reports', 'Reportes', can('reports.read')], ['/users', 'Usuarios', can('users.read')], ['/roles', 'Roles', can('roles.read')], ['/audit', 'Auditoría', can('audit.read')]] as const; return <div className="app-shell"><aside><div className="side-brand"><img className="side-logo" src="/data-erp-logo.svg" alt="DATA ERP" /></div><nav>{links.filter((link) => link[2]).map(([path, label]) => <Link className={location.pathname.startsWith(path) ? 'active' : ''} to={path} key={path}>{label}</Link>)}</nav><button className="ghost" onClick={() => logout()}>Cerrar sesión</button></aside><section className="workspace"><header><div><p className="eyebrow">CENTRO DE CONTROL</p><h1>{user.firstName} {user.lastName}</h1></div><div className="user-chip">{user.email}</div></header><main className="content"><Outlet /></main></section></div>; }
+function Shell() {
+  const { user, loading, logout, can } = useAuth();
+  const location = useLocation();
+  if (loading) return <div className="loading">Cargando espacio de trabajo...</div>;
+  if (!user) return <Navigate to="/login" replace />;
 
-function DashboardPage() { const { data, loading, error } = useResource<Row>('/dashboard/summary'); if (loading) return <Loading />; if (error) return <ErrorState message={error} />; const cards = [['Ventas hoy', data?.ventasHoy], ['Ventas mes', data?.ventasMes], ['Compras mes', data?.comprasMes], ['Clientes activos', data?.clientesActivos], ['Stock bajo', data?.stockBajo], ['Agotados', data?.productosAgotados], ['Inventario valorizado', data?.inventarioValorizado]]; return <><div className="section-heading"><div><p className="eyebrow">RESUMEN OPERATIVO</p><h2>Dashboard</h2><p className="muted">Datos reales de la empresa autenticada.</p></div><span className="status-dot">API conectada</span></div><div className="metrics">{cards.map(([label, value]) => <article className="metric" key={String(label)}><span>{String(label)}</span><strong>{typeof value === 'number' ? value.toLocaleString('es-ES') : '-'}</strong><small>Actualizado ahora</small></article>)}</div><div className="lower-grid"><Recent title="Ventas recientes" rows={(data?.ventasRecientes as Row[] | undefined) ?? []} /><Recent title="Movimientos recientes" rows={(data?.movimientosRecientes as Row[] | undefined) ?? []} /></div></>; }
+  const operationLinks = [
+    ['/dashboard', 'Dashboard', true], ['/products', 'Productos', can('products.read')],
+    ['/categories', 'Categorías', can('categories.read')], ['/customers', 'Clientes', can('customers.read')],
+    ['/suppliers', 'Proveedores', can('suppliers.read')], ['/warehouses', 'Almacenes', can('warehouses.read')],
+    ['/branches', 'Sucursales', can('branches.read')], ['/inventory', 'Inventario', can('inventory.read')],
+    ['/sales', 'Ventas', can('sales.read')], ['/purchases', 'Compras', can('purchases.read')],
+    ['/reports', 'Reportes', can('reports.read')],
+  ] as const;
+  const adminLinks = [
+    ['/users', 'Usuarios', can('users.read')], ['/roles', 'Roles', can('roles.read')], ['/audit', 'Auditoría', can('audit.read')],
+  ] as const;
+  const renderLinks = (links: readonly (readonly [string, string, boolean])[]) => links.filter((link) => link[2]).map(([path, label]) =>
+    <Link className={location.pathname === path || (path !== '/dashboard' && location.pathname.startsWith(path)) ? 'active' : ''} to={path} key={path}>{label}</Link>);
+
+  return <div className="app-shell">
+    <aside className="sidebar">
+      <Link className="side-brand" to="/dashboard" aria-label="DATA ERP, ir al dashboard"><img className="side-logo" src="/data-erp-logo.svg" alt="DATA ERP" /></Link>
+      <div className="workspace-label"><span className="workspace-dot" /> ESPACIO DE TRABAJO</div>
+      <nav aria-label="Navegación principal">
+        <p className="nav-caption">OPERACIÓN</p>{renderLinks(operationLinks)}
+        {adminLinks.some((link) => link[2]) && <><p className="nav-caption">ADMINISTRACIÓN</p>{renderLinks(adminLinks)}</>}
+      </nav>
+      <div className="sidebar-account"><div className="account-avatar">{user.firstName.slice(0, 1)}{user.lastName.slice(0, 1)}</div><div className="account-copy"><strong>{user.firstName} {user.lastName}</strong><span>{user.email}</span></div><button className="logout-button" onClick={() => void logout()} aria-label="Cerrar sesión" title="Cerrar sesión">↗</button></div>
+    </aside>
+    <section className="workspace">
+      <header className="topbar"><div className="breadcrumb"><span>DATA ERP</span><b>/</b><strong>{location.pathname === '/dashboard' ? 'Resumen' : location.pathname.split('/')[1]}</strong></div><div className="user-chip"><span className="online-dot" /> Sistema conectado <span className="chip-divider" /> {user.email}</div></header>
+      <main className="content"><Outlet /></main>
+    </section>
+  </div>;
+}
+
+function DashboardPage() {
+  const { data, loading, error } = useResource<Row>('/dashboard/summary');
+  if (loading) return <Loading />;
+  if (error) return <ErrorState message={error} />;
+  const cards = [
+    ['Ventas hoy', data?.ventasHoy, '$', 'violet'], ['Ventas mes', data?.ventasMes, '↗', 'magenta'],
+    ['Compras mes', data?.comprasMes, '↙', 'gold'], ['Clientes activos', data?.clientesActivos, '◎', 'blue'],
+    ['Stock bajo', data?.stockBajo, '!', 'orange'], ['Agotados', data?.productosAgotados, '×', 'red'],
+    ['Inventario valorizado', data?.inventarioValorizado, '$', 'green'],
+  ] as const;
+  return <>
+    <div className="dashboard-heading"><div><p className="eyebrow">VISTA GENERAL</p><h1>Resumen operativo</h1><p className="muted">Un vistazo a la actividad de tu empresa.</p></div><span className="status-pill"><span className="online-dot" /> API conectada</span></div>
+    <section className="metrics" aria-label="Indicadores de operación">{cards.map(([label, value, icon, tone]) => <article className={`metric metric-${tone}`} key={label}><div className="metric-top"><span>{label}</span><span className="metric-icon" aria-hidden="true">{icon}</span></div><strong>{typeof value === 'number' ? value.toLocaleString('es-MX') : '-'}</strong><small><span className="metric-live-dot" /> Actualizado ahora</small></article>)}</section>
+    <div className="dashboard-section-title"><div><p className="eyebrow">ACTIVIDAD</p><h2>Lo más reciente</h2></div></div>
+    <div className="lower-grid"><Recent title="Ventas recientes" rows={(data?.ventasRecientes as Row[] | undefined) ?? []} /><Recent title="Movimientos recientes" rows={(data?.movimientosRecientes as Row[] | undefined) ?? []} /></div>
+  </>;
+}
 function Loading() { return <div className="panel"><p className="muted">Cargando datos...</p></div>; }
 function ErrorState({ message }: { message: string }) { return <div className="error">{message}</div>; }
-function Recent({ title, rows }: { title: string; rows: Row[] }) { return <article className="panel"><div className="panel-title"><h3>{title}</h3><span>{rows.length} registros</span></div>{rows.length === 0 ? <p className="muted">No hay registros recientes.</p> : <div className="recent-list">{rows.map((row, index) => <div className="recent-row" key={String(row.id ?? index)}><span>{String(row.productName ?? row.customerName ?? row.type ?? 'Registro')}</span><strong>{String(row.total ?? row.quantity ?? '')}</strong></div>)}</div>}</article>; }
+function Recent({ title, rows }: { title: string; rows: Row[] }) { return <article className="panel recent-panel"><div className="panel-title"><div><span className="panel-kicker">REGISTROS</span><h3>{title}</h3></div><span className="record-count">{rows.length} registros</span></div>{rows.length === 0 ? <div className="empty-state"><span className="empty-icon">↗</span><p>No hay registros recientes.</p><small>La actividad aparecerá aquí cuando registres operaciones.</small></div> : <div className="recent-list">{rows.map((row, index) => <div className="recent-row" key={String(row.id ?? index)}><span>{String(row.productName ?? row.customerName ?? row.type ?? 'Registro')}</span><strong>{String(row.total ?? row.quantity ?? '')}</strong></div>)}</div>}</article>; }
 function ResourcePage({ resource }: { resource: string }) {
   const config = resources[resource]!;
   const { can } = useAuth();
