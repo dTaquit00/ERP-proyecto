@@ -2,22 +2,22 @@
 
 | Módulo | Backend | Web | Mobile | Unit | Integration | E2E | Security | Docs | Estado |
 |---|---|---|---|---|---|---|---|---|---|
-| M01 Auth | Sí | Login + refresh + AuthProvider | Login + refresh base | Sí | Sí | Smoke preparado | Sí | Sí | Parcial integrado |
-| M02 Users | Sí | Listado | No | Sí | Sí | No | RBAC | Sí | Backend operativo |
-| M03 RBAC | Sí | Sidebar filtrado | No | Sí | Sí | No | Sí | Sí | Parcial integrado |
-| M04 Companies | Sí | No | No | Sí | Sí | No | Bootstrap restringido | Sí | Backend operativo |
-| M05 Branches | Sí | Listado | No | Parcial | Sí | No | Multiempresa | Sí | Parcial integrado |
-| M06 Categories | Sí | Listado | No | Sí | Sí | No | Sí | Sí | Parcial integrado |
-| M07 Products | Sí | Listado | No | Sí | Sí | No | Sí | Sí | Parcial integrado |
-| M08 Customers | Sí | Listado | No | Sí | Sí | No | Sí | Sí | Parcial integrado |
-| M09 Suppliers | Sí | Listado | No | Sí | Sí | No | Sí | Sí | Parcial integrado |
-| M10 Warehouses | Sí | Listado | No | Sí | Sí | No | Sí | Sí | Parcial integrado |
-| M11 Inventory | Sí | Listado | No | Sí | Sí | No | Sí | Sí | Parcial integrado |
-| M12 Sales | Sí | Listado | No | Sí | Sí | No | Sí | Sí | Backend operativo |
-| M13 Purchases | Sí | Listado | No | Parcial | Sí | No | Sí | Sí | Parcial integrado |
-| M14 Dashboard | Sí | Dashboard + routing | Dashboard | No | Parcial | No | Sí | Sí | Parcial integrado |
-| M15 Reports | CSV/PDF | Enlace exportación | No | No | Parcial | No | Límite/injection | Sí | Parcial integrado |
-| M16 Audit | Sí | Listado API pendiente | No | No | Parcial | No | Redacción base | Sí | Backend operativo |
+| M01 Auth | Sí | Login, refresh, cambio y recuperación/restablecimiento de contraseña | Login + refresh base | Sí | Sí | Smoke preparado | Sí | Sí | Integrado web; falta E2E |
+| M02 Users | Sí | CRUD, activación y sesiones/historial | No | Sí | Sí | No | RBAC | Sí | Integrado web; falta E2E |
+| M03 RBAC | Sí | Sidebar y edición de permisos/roles | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M04 Companies | Sí | Consulta/edición de perfil y settings JSON | No | Sí | Sí | No | Bootstrap restringido | Sí | Integrado web; alta solo plataforma |
+| M05 Branches | Sí | CRUD y activar/desactivar | No | Parcial | Sí | No | Multiempresa | Sí | Integrado web; falta E2E |
+| M06 Categories | Sí | CRUD y desactivación | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M07 Products | Sí | CRUD de catálogo con impuestos, imagen y código de barras | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M08 Customers | Sí | CRUD, baja lógica e historial de ventas | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M09 Suppliers | Sí | CRUD, baja lógica e historial de compras | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M10 Warehouses | Sí | CRUD, asociación a sucursal e inventario por almacén | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M11 Inventory | Sí | Existencias, movimientos y creación de operaciones | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M12 Sales | Sí | Multiartículo, listado, detalle/historial y transiciones | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M13 Purchases | Sí | Multiartículo, recepción parcial, detalle/historial y transiciones | No | Parcial | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M14 Dashboard | Sí | Indicadores y ventas/compras/movimientos recientes reales | Dashboard | No | Parcial | No | Sí | Sí | Integrado web; falta E2E |
+| M15 Reports | CSV/PDF | Selección de tipo, formato y filtros | No | No | Parcial | No | Límite/injection | Sí | Integrado web; falta E2E |
+| M16 Audit | Sí | Listado, filtros y detalle de eventos | No | No | Parcial | No | Redacción base | Sí | Integrado web; falta E2E |
 
 ## Verificación actual
 
@@ -33,9 +33,8 @@
 
 ## Pendientes que no deben marcarse como terminados
 
-- Formularios CRUD web y flujos POS/recepción completos.
+- Flujo POS con lector de códigos de barras/QR.
 - Navegación y flujos de negocio móviles.
 - E2E de negocio venta/compra/inventario/auditoría/aislamiento.
-- Scanner barcode/QR.
 - Streaming de exportaciones grandes.
 - Revisión de compatibilidad Vitest 5.
