@@ -75,7 +75,7 @@ function readValue(data: Row, path: string): string {
 export function EntityFormPage() {
   const { resource, id } = useParams();
   const navigate = useNavigate();
-  const { can } = useAuth();
+  const { can, user, logout } = useAuth();
   const kind = (resource ?? '') as EntityKind;
   const isKnown = ['customers', 'suppliers', 'warehouses', 'branches', 'companies', 'users', 'roles'].includes(kind);
   const [values, setValues] = useState<Row>({ isActive: true, status: 'active', permissions: [] });
@@ -161,8 +161,17 @@ export function EntityFormPage() {
     setSaving(true); setError(''); setUserHistoryError('');
     try {
       await apiRequest(`/users/${id}/revoke-sessions`, { method: 'POST' });
-      const history = await apiRequest<Row>(`/users/${id}/history`);
-      setUserHistory(history);
+      const revokedAt = new Date().toISOString();
+      setUserHistory((current) => current ? {
+        ...current,
+        sessions: ((current.sessions as Row[]) ?? []).map((session) => session.active
+          ? { ...session, active: false, revokedAt }
+          : session),
+      } : current);
+      if (user?.id === id) {
+        await logout();
+        navigate('/login', { replace: true });
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'No se pudieron revocar las sesiones');
     } finally { setSaving(false); }
