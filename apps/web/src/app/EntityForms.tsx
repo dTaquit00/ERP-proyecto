@@ -134,7 +134,7 @@ export function EntityFormPage() {
     if (kind === 'warehouses' && id && canReadInventory) { setWarehouseStockLoading(true); apiRequest<{ items: Row[] }>(`/warehouses/${id}/inventory?limit=100`).then((result) => { if (active) setWarehouseStock(result.items ?? []); }).catch((reason) => { if (active) setWarehouseStockError(reason instanceof Error ? reason.message : 'No se pudo cargar el inventario del almacén'); }).finally(() => { if (active) setWarehouseStockLoading(false); }); }
     if (id) {
       apiRequest<Row>(`/${kind}/${id}`)
-        .then((item) => { if (active) setValues({ ...item, settingsJson: JSON.stringify(item.settings ?? {}, null, 2), password: '', address: item.address && typeof item.address === 'object' ? item.address : {} }); })
+        .then((item) => { if (active) setValues({ ...item, settingsJson: JSON.stringify(item.settings ?? {}, null, 2), password: '', ...(['customers', 'suppliers'].includes(kind) ? { address: item.address && typeof item.address === 'object' ? item.address : {} } : {}) }); })
         .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : `No se pudo cargar el ${title}`); })
         .finally(() => { if (active) setLoading(false); });
     }
@@ -143,7 +143,7 @@ export function EntityFormPage() {
 
   function update(key: string, value: unknown) {
     setValues((current) => {
-      const next = { ...current, address: current.address && typeof current.address === 'object' ? { ...current.address as Row } : {} };
+      const next = { ...current, ...(['customers', 'suppliers'].includes(kind) ? { address: current.address && typeof current.address === 'object' ? { ...current.address as Row } : {} } : {}) };
       setNested(next, key, value);
       return next;
     });
