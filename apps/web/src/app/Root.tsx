@@ -354,7 +354,8 @@ function SaleCreatePage() {
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setSaving(true); setError('');
     try {
-      await apiRequest('/sales', { method: 'POST', body: JSON.stringify({ customerId, warehouseId, notes: notes.trim() || undefined, items: lines.map((line) => ({ productId: line.productId, quantity: Number(line.quantity), discount: Number(line.discount) })) }) });
+      const selectedWarehouse = warehouses.find((warehouse) => String(warehouse.id) === warehouseId);
+      await apiRequest('/sales', { method: 'POST', body: JSON.stringify({ customerId, warehouseId, branchId: selectedWarehouse?.branchId ?? undefined, notes: notes.trim() || undefined, items: lines.map((line) => ({ productId: line.productId, quantity: Number(line.quantity), discount: Number(line.discount) })) }) });
       navigate('/sales');
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo crear la venta'); }
     finally { setSaving(false); }
@@ -432,7 +433,7 @@ function PurchaseCreatePage() {
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar los datos'); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
-  async function submit(event: React.FormEvent) { event.preventDefault(); setSaving(true); setError(''); try { await apiRequest('/purchases', { method: 'POST', body: JSON.stringify({ supplierId, warehouseId, notes: notes.trim() || undefined, items: lines.map((line) => ({ productId: line.productId, quantity: Number(line.quantity), unitCost: Number(line.unitCost), discount: Number(line.discount), taxes: line.taxes })) }) }); navigate('/purchases'); } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo crear la compra'); } finally { setSaving(false); } }
+  async function submit(event: React.FormEvent) { event.preventDefault(); setSaving(true); setError(''); try { const selectedWarehouse = warehouses.find((warehouse) => String(warehouse.id) === warehouseId); await apiRequest('/purchases', { method: 'POST', body: JSON.stringify({ supplierId, warehouseId, branchId: selectedWarehouse?.branchId ?? undefined, notes: notes.trim() || undefined, items: lines.map((line) => ({ productId: line.productId, quantity: Number(line.quantity), unitCost: Number(line.unitCost), discount: Number(line.discount), taxes: line.taxes })) }) }); navigate('/purchases'); } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo crear la compra'); } finally { setSaving(false); } }
   if (!can('purchases.write')) return <ErrorState message="No tienes permiso para crear compras." />; if (loading) return <Loading />;
   const select = (label: string, value: string, update: (next: string) => void, rows: Row[]) => <label>{label}<select required value={value} onChange={(event) => update(event.target.value)}><option value="">Selecciona…</option>{rows.map((row) => <option key={String(row.id)} value={String(row.id)}>{String(row.name ?? row.sku ?? row.id)}</option>)}</select></label>;
   const estimatedTotal = lines.reduce((sum, line) => { const taxable = Number(line.quantity || 0) * Number(line.unitCost || 0) * (1 - Number(line.discount || 0) / 100); return sum + taxable + line.taxes.reduce((taxSum, tax) => taxSum + taxable * tax.rate / 100, 0); }, 0);
