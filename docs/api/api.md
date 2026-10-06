@@ -40,6 +40,7 @@ Error:
 ### Autenticación
 
 `Authorization: Bearer <accessToken>` en todos los endpoints protegidos.
+Cada solicitud protegida valida que el `sid` del token corresponda a una sesión vigente; el logout, el cambio/reset de contraseña y la revocación administrativa invalidan también sus access tokens.
 
 El **refresh token** viaja en cookie `httpOnly` (`Path=/api/v1/auth`), no en el cuerpo.
 El cliente debe enviar `credentials: 'include'` (CORS está configurado con `credentials: true`).

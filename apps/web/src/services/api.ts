@@ -3,8 +3,10 @@
 const API_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
 let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
+let onAuthenticationExpired: (() => void) | null = null;
 
 export function setAccessToken(token: string | null): void { accessToken = token; }
+export function setAuthenticationExpiredHandler(handler: (() => void) | null): void { onAuthenticationExpired = handler; }
 
 async function refresh(): Promise<string | null> {
   if (!refreshPromise) {
@@ -26,6 +28,10 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retry 
   if (response.status === 401 && retry && !path.startsWith('/auth/')) {
     const token = await refresh();
     if (token) return apiRequest<T>(path, init, false);
+  }
+  if (response.status === 401 && !path.startsWith('/auth/')) {
+    accessToken = null;
+    onAuthenticationExpired?.();
   }
   const body = await response.json().catch(() => ({})) as { data?: T; error?: { message?: string } };
   if (!response.ok) throw new Error(body.error?.message ?? 'No se pudo completar la solicitud');

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { apiRequest, bootstrap, login as apiLogin, logout as apiLogout } from '../services/api';
+import { apiRequest, bootstrap, login as apiLogin, logout as apiLogout, setAuthenticationExpiredHandler } from '../services/api';
 
 type AuthUser = { id: string; email: string; firstName: string; lastName: string; companyId: string; roleName: string; permissions: string[] };
 type AuthContextValue = { user: AuthUser | null; loading: boolean; error: string | null; login: (email: string, password: string, companyId?: string) => Promise<void>; logout: () => Promise<void>; can: (permission: string) => boolean };
@@ -7,6 +7,10 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setAuthenticationExpiredHandler(() => setUser(null));
+    return () => setAuthenticationExpiredHandler(null);
+  }, []);
   useEffect(() => { bootstrap().then((value) => setUser(value as AuthUser | null)).catch(() => setUser(null)).finally(() => setLoading(false)); }, []);
   async function login(email: string, password: string, companyId?: string) { setError(null); const result = await apiLogin(email, password, companyId); setUser(result.user as AuthUser); }
   async function logout() { await apiLogout(); setUser(null); }
