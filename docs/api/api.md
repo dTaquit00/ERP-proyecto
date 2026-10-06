@@ -185,7 +185,9 @@ inventario, movimientos, productos, clientes o proveedores con filtros de fecha,
 sucursal, almacén y referencias, límite de 5.000 filas y escape contra CSV injection.
 `GET /reports/:type.pdf` genera el mismo reporte como PDF desde el servicio de exportación.
 En ventas y compras, `productId` se aplica dentro de `items[]`; `userId` se aplica
-en la cabecera y `categoryId` está disponible para el reporte de productos.
+en la cabecera y `categoryId` está disponible para el reporte de productos. En
+inventario y movimientos, `branchId` se resuelve a los almacenes asociados a esa
+sucursal; si también se envía `warehouseId`, ambos filtros se intersectan.
 
 `GET /audit-logs` y `GET /audit-logs/:id` requieren `audit.read`. Las mutaciones
 autenticadas generan automáticamente un registro con usuario, recurso, resultado,

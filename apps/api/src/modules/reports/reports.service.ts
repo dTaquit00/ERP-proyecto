@@ -7,6 +7,7 @@ import { StockBalanceModel, InventoryMovementModel } from '../inventory/inventor
 import { ProductModel } from '../products/products.model.js';
 import { CustomerModel } from '../customers/customers.model.js';
 import { SupplierModel } from '../suppliers/suppliers.model.js';
+import { WarehouseModel } from '../warehouses/warehouses.model.js';
 
 const MAX_ROWS = 5000;
 function endOfDateFilter(value: Date): { $lte: Date } | { $lt: Date } {
@@ -29,7 +30,7 @@ const csv = (rows: Array<Record<string, unknown>>): string => {
 
 export const reportsService = {
   async exportCsv(companyId: string, type: string, query: ReportQueryInput = {}): Promise<string> {
-    const filters = buildFilters(companyId, type, query);
+    const filters = await buildFilters(companyId, type, query);
     let rows: Array<Record<string, unknown>>;
     switch (type) {
       case 'sales': rows = await SaleModel.find(filters).sort({ saleDate: -1 }).limit(MAX_ROWS).lean().exec(); break;
@@ -57,11 +58,23 @@ export const reportsService = {
   },
 };
 
-function buildFilters(companyId: string, type: string, query: ReportQueryInput): Record<string, unknown> {
+async function buildFilters(companyId: string, type: string, query: ReportQueryInput): Promise<Record<string, unknown>> {
   const filters: Record<string, unknown> = { companyId: new Types.ObjectId(companyId) };
   if (query.status) filters.status = query.status;
-  if (query.branchId) filters.branchId = new Types.ObjectId(query.branchId);
-  if (query.warehouseId) filters.warehouseId = new Types.ObjectId(query.warehouseId);
+  const branchScopedByWarehouse = type === 'inventory' || type === 'inventory-movements';
+  if (query.branchId && branchScopedByWarehouse) {
+    const warehouseIds = await WarehouseModel.find({
+      companyId: new Types.ObjectId(companyId),
+      branchId: new Types.ObjectId(query.branchId),
+    }).distinct('_id').exec();
+    const matchingIds = query.warehouseId
+      ? warehouseIds.filter((id) => id.toString() === query.warehouseId)
+      : warehouseIds;
+    filters.warehouseId = { $in: matchingIds };
+  } else {
+    if (query.branchId) filters.branchId = new Types.ObjectId(query.branchId);
+    if (query.warehouseId) filters.warehouseId = new Types.ObjectId(query.warehouseId);
+  }
   if (query.productId) {
     const productId = new Types.ObjectId(query.productId);
     if (type === 'sales' || type === 'purchases') filters.items = { $elemMatch: { productId } };
