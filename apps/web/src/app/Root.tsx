@@ -362,8 +362,8 @@ function SaleCreatePage() {
   useEffect(() => {
     let active = true;
     Promise.all([
-      apiRequest<{ items: Row[] }>('/customers?limit=100'),
-      apiRequest<{ items: Row[] }>('/warehouses?limit=100'),
+      apiRequest<{ items: Row[] }>('/customers?limit=100&status=active'),
+      apiRequest<{ items: Row[] }>('/warehouses?limit=100&status=active'),
       apiRequest<{ items: Row[] }>('/products?limit=100&status=active'),
     ]).then(([customerResult, warehouseResult, productResult]) => {
       if (!active) return;
@@ -448,7 +448,7 @@ function PurchaseCreatePage() {
   const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState('');
   useEffect(() => {
     let active = true;
-    Promise.all([apiRequest<{ items: Row[] }>('/suppliers?limit=100'), apiRequest<{ items: Row[] }>('/warehouses?limit=100'), apiRequest<{ items: Row[] }>('/products?limit=100&status=active')])
+    Promise.all([apiRequest<{ items: Row[] }>('/suppliers?limit=100&status=active'), apiRequest<{ items: Row[] }>('/warehouses?limit=100&status=active'), apiRequest<{ items: Row[] }>('/products?limit=100&status=active')])
       .then(([s, w, p]) => { if (active) { setSuppliers(s.items ?? []); setWarehouses(w.items ?? []); setProducts(p.items ?? []); } })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar los datos'); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
