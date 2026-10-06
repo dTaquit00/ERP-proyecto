@@ -139,9 +139,29 @@ function ResourcePage({ resource }: { resource: string }) {
   </>;
 }
 function InventoryStockTable({ items, loading, error }: { items: Row[]; loading: boolean; error: string | null }) {
+  const { can } = useAuth();
+  const [rows, setRows] = useState(items);
+  const [editingId, setEditingId] = useState('');
+  const [minimum, setMinimum] = useState('');
+  const [savingId, setSavingId] = useState('');
+  const [saveError, setSaveError] = useState('');
+  useEffect(() => setRows(items), [items]);
+
+  async function saveMinimum(id: string) {
+    const value = Number(minimum);
+    if (!Number.isFinite(value) || value < 0 || value > 1_000_000_000) { setSaveError('El mínimo debe ser un número entre 0 y 1,000,000,000.'); return; }
+    setSavingId(id); setSaveError('');
+    try {
+      const updated = await apiRequest<Row>(`/inventory/stock/${id}`, { method: 'PATCH', body: JSON.stringify({ minStock: value }) });
+      setRows((current) => current.map((row) => String(row.id) === id ? { ...row, minStock: updated.minStock, lowStock: updated.lowStock } : row));
+      setEditingId('');
+    } catch (reason) { setSaveError(reason instanceof Error ? reason.message : 'No se pudo actualizar el mínimo de stock'); }
+    finally { setSavingId(''); }
+  }
+
   if (loading) return <Loading />;
   if (error) return <ErrorState message={error} />;
-  return <div className="panel table-panel">{items.length === 0 ? <p className="muted">No hay existencias registradas todavía. Crea productos y registra una entrada para comenzar.</p> : <table><thead><tr><th>Producto</th><th>Almacén</th><th>Existencia</th><th>Mínimo</th><th>Disponibilidad</th></tr></thead><tbody>{items.map((item, index) => { const quantity = Number(item.quantity ?? 0); const status = quantity <= 0 ? 'out_of_stock' : item.lowStock === true ? 'low' : 'available'; return <tr key={String(item.id ?? index)}><td>{String(item.productName ?? item.productSku ?? '-')}</td><td>{String(item.warehouseName ?? '-')}</td><td>{String(quantity)}</td><td>{String(item.minStock ?? 0)}</td><td><span className={`stock-status ${status === 'out_of_stock' ? 'stock-empty' : status === 'low' ? 'stock-low' : 'stock-ok'}`}>{status === 'out_of_stock' ? 'Agotado' : status === 'low' ? 'Stock bajo' : 'Disponible'}</span></td></tr>; })}</tbody></table>}</div>;
+  return <div className="panel table-panel">{saveError && <ErrorState message={saveError} />}{rows.length === 0 ? <p className="muted">No hay existencias registradas todavía. Crea productos y registra una entrada para comenzar.</p> : <table><thead><tr><th>Producto</th><th>Almacén</th><th>Existencia</th><th>Mínimo</th><th>Disponibilidad</th>{can('inventory.write') && <th>Acción</th>}</tr></thead><tbody>{rows.map((item, index) => { const id = String(item.id ?? ''); const quantity = Number(item.quantity ?? 0); const status = quantity <= 0 ? 'out_of_stock' : item.lowStock === true ? 'low' : 'available'; return <tr key={id || index}><td>{String(item.productName ?? item.productSku ?? '-')}</td><td>{String(item.warehouseName ?? '-')}</td><td>{String(quantity)}</td><td>{editingId === id ? <input aria-label={`Mínimo de stock para ${String(item.productName ?? 'producto')}`} type="number" min="0" max="1000000000" step="any" value={minimum} onChange={(event) => setMinimum(event.target.value)} /> : String(item.minStock ?? 0)}</td><td><span className={`stock-status ${status === 'out_of_stock' ? 'stock-empty' : status === 'low' ? 'stock-low' : 'stock-ok'}`}>{status === 'out_of_stock' ? 'Agotado' : status === 'low' ? 'Stock bajo' : 'Disponible'}</span></td>{can('inventory.write') && <td>{editingId === id ? <><button type="button" disabled={savingId === id} onClick={() => void saveMinimum(id)}>{savingId === id ? 'Guardando…' : 'Guardar'}</button> <button type="button" disabled={savingId === id} onClick={() => setEditingId('')}>Cancelar</button></> : <button type="button" onClick={() => { setMinimum(String(item.minStock ?? 0)); setSaveError(''); setEditingId(id); }}>Editar mínimo</button>}</td>}</tr>; })}</tbody></table>}</div>;
 }
 function InventoryMovementsPage() {
   const { can } = useAuth();
