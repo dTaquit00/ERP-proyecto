@@ -65,11 +65,12 @@ function buildFilters(companyId: string, type: string, query: ReportQueryInput):
   if (query.productId) {
     const productId = new Types.ObjectId(query.productId);
     if (type === 'sales' || type === 'purchases') filters.items = { $elemMatch: { productId } };
+    else if (type === 'products') filters._id = productId;
     else filters.productId = productId;
   }
   if (query.categoryId && type === 'products') filters.categoryId = new Types.ObjectId(query.categoryId);
-  if (query.customerId) filters.customerId = new Types.ObjectId(query.customerId);
-  if (query.supplierId) filters.supplierId = new Types.ObjectId(query.supplierId);
+  if (query.customerId) filters[type === 'customers' ? '_id' : 'customerId'] = new Types.ObjectId(query.customerId);
+  if (query.supplierId) filters[type === 'suppliers' ? '_id' : 'supplierId'] = new Types.ObjectId(query.supplierId);
   if (query.userId) filters.userId = new Types.ObjectId(query.userId);
   const dateField = type === 'sales' ? 'saleDate' : type === 'purchases' ? 'purchaseDate' : 'createdAt';
   if (query.dateFrom || query.dateTo) filters[dateField] = {
