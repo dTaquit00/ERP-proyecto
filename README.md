@@ -8,25 +8,26 @@ Construido con **TypeScript estricto** en todo el stack:
 | Capa | Tecnología |
 |---|---|
 | Móvil | React Native + TypeScript |
-| Web | React Native Web + TypeScript |
+| Web | React + TypeScript + React Router + Vite |
 | API | Node.js + Express + TypeScript |
 | Base de datos | MongoDB Atlas (Mongoose) |
 | Validación | Zod (schemas compartidos) |
 | Pruebas | Vitest + Supertest + mongodb-memory-server |
 
-> Estado actual: **Backend M01–M16 operativo; web con autenticación, routing, dashboard y listados; móvil con base Expo; CRUD web/móvil y E2E de negocio pendientes** — monorepo, API base, seguridad, MongoDB,
-> autenticación (M01), usuarios (M02), roles/permisos (M03), categorías (M06),
-> productos (M07), almacenes (M10), inventario (M11), clientes (M08),
-> proveedores (M09) y ventas (M12, con transacciones multi-documento), con RBAC
-> verificado en backend y pruebas unitarias e de integración. Los módulos
-> restantes se construyen por fases según `docs/requirements/requirements.md`.
+> Estado actual: **M01–M16 integrados en la API y la aplicación web; E2E de negocio pendientes.**
+> La web incluye autenticación, CRUD con permisos, dashboard con datos reales,
+> ventas, compras y recepciones, inventario con movimientos, reportes CSV/PDF,
+> auditoría y lectura de códigos con escáneres que funcionan como teclado.
+> La aplicación móvil tiene una base Expo; sus flujos de negocio todavía están
+> pendientes. Consulta `docs/qa/progress.md` para el detalle y los límites de
+> verificación actuales.
 
 ---
 
 ## Arquitectura
 
 ```
-React Native / React Native Web
+React (Vite)
         ↓  (REST / JSON + JWT)
    API REST  /api/v1
         ↓
@@ -54,7 +55,7 @@ Estructura del monorepo (npm workspaces):
 ERP/
 ├── apps/
 │   ├── api/        Express + TS (arquitectura por módulo: routes → controller → service → repository → model)
-│   ├── web/        React Native Web (Fase 16)
+│   ├── web/        React + TypeScript + Vite (Fase 16)
 │   └── mobile/     React Native (Fase 16)
 ├── packages/
 │   ├── types/        Tipos compartidos (ApiResponse, permisos, payloads)

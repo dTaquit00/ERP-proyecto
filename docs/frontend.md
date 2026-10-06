@@ -2,7 +2,7 @@
 
 ## Web
 
-`apps/web` usa React Native Web, React y Vite. Ejecutar:
+`apps/web` es una aplicación React con TypeScript, React Router y Vite. Ejecutar:
 
 ```bash
 npm run dev --workspace apps/web

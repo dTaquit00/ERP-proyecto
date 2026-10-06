@@ -2,7 +2,7 @@
   "name": "@erp/web",
   "version": "0.1.0",
   "private": true,
-  "description": "ERP web con React Native Web + TypeScript.",
+  "description": "DATA ERP web con React, TypeScript, React Router y Vite.",
   "type": "module",
   "scripts": {
     "dev": "vite",
