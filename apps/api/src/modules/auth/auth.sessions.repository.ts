@@ -10,6 +10,11 @@ export interface SessionCreateInput {
 }
 
 export const sessionsRepository = {
+  async findById(id: string): Promise<SessionDocument | null> {
+    if (!Types.ObjectId.isValid(id)) return null;
+    return SessionModel.findById(id).exec();
+  },
+
   async create(input: SessionCreateInput): Promise<SessionDocument> {
     return SessionModel.create(input);
   },

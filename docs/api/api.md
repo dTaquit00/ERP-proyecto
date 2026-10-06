@@ -120,7 +120,7 @@ Todos exigen `Authorization: Bearer` y RBAC en backend. Scope: siempre la empres
 | POST | `/users/:id/activate` | `users.write` | Reactiva (login vuelve a funcionar). |
 | POST | `/users/:id/deactivate` | `users.write` | Desactiva. 400 `SELF_DEACTIVATE` (a uno mismo), 409 `LAST_ACTIVE_ADMIN` (último admin activo). |
 | GET | `/users/:id/history` | `users.read` | `{userId, createdAt, lastLoginAt, passwordChangedAt, sessions[]}` — fechas reales + sesiones recientes (sin tokens). |
-| POST | `/users/:id/revoke-sessions` | `users.write` | Revoca todas las sesiones de refresh del usuario de la empresa autenticada. Devuelve `{message}`; el usuario debe iniciar sesión de nuevo. |
+| POST | `/users/:id/revoke-sessions` | `users.write` | Revoca todas las sesiones del usuario de la empresa autenticada; refresh y tokens de acceso asociados dejan de funcionar de inmediato. Devuelve `{message}`. |
 
 ---
 

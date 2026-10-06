@@ -3,6 +3,7 @@ import type { AuthContext } from '../../modules/auth/auth.types.js';
 import { AuthError, ForbiddenError, InternalError } from '../http/errors.js';
 import { verifyAccessToken } from '../security/jwt.js';
 import { usersRepository } from '../../modules/users/users.repository.js';
+import { sessionsRepository } from '../../modules/auth/auth.sessions.repository.js';
 import { rolesRepository } from '../../modules/roles/roles.repository.js';
 import { isPermission } from '@erp/types';
 
@@ -21,8 +22,12 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
     }
     const payload = verifyAccessToken(header.slice(7).trim());
 
-    const user = await usersRepository.findById(payload.sub);
-    if (!user) {
+    const [user, session] = await Promise.all([
+      usersRepository.findById(payload.sub),
+      sessionsRepository.findById(payload.sid),
+    ]);
+    if (!user || !session || session.userId.toString() !== payload.sub
+      || session.revokedAt || session.expiresAt.getTime() <= Date.now()) {
       throw new AuthError('La sesión no es válida', 'SESSION_INVALID');
     }
     if (!user.isActive) {
