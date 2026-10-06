@@ -54,6 +54,10 @@ export async function downloadReport(path: string, retry = true): Promise<{ blob
     const token = await refresh();
     if (token) return downloadReport(path, false);
   }
+  if (response.status === 401) {
+    accessToken = null;
+    onAuthenticationExpired?.();
+  }
   if (!response.ok) {
     const body = await response.json().catch(() => ({})) as { error?: { message?: string } };
     throw new Error(body.error?.message ?? 'No se pudo descargar el reporte');
