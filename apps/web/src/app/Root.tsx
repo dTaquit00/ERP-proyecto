@@ -333,6 +333,8 @@ function SaleCreatePage() {
   const [customerId, setCustomerId] = useState('');
   const [warehouseId, setWarehouseId] = useState('');
   const [lines, setLines] = useState<Array<{ productId: string; quantity: string; discount: string }>>([{ productId: '', quantity: '1', discount: '0' }]);
+  const [barcode, setBarcode] = useState('');
+  const [scanning, setScanning] = useState(false);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -357,6 +359,28 @@ function SaleCreatePage() {
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo crear la venta'); }
     finally { setSaving(false); }
   }
+  async function addScannedProduct(event?: React.FormEvent | React.KeyboardEvent<HTMLInputElement>) {
+    event?.preventDefault();
+    const scannedCode = barcode.trim();
+    if (!scannedCode || scanning) return;
+    setScanning(true); setError('');
+    try {
+      const result = await apiRequest<{ items: Row[] }>(`/products?status=active&limit=100&search=${encodeURIComponent(scannedCode)}`);
+      const product = (result.items ?? []).find((item) => [item.barcode, item.sku, item.code].some((value) => String(value ?? '').toLocaleLowerCase() === scannedCode.toLocaleLowerCase()));
+      if (!product) { setError(`No se encontró un producto activo con el código “${scannedCode}”.`); return; }
+      const productId = String(product.id);
+      setLines((current) => {
+        const existingIndex = current.findIndex((line) => line.productId === productId);
+        if (existingIndex >= 0) return current.map((line, index) => index === existingIndex ? { ...line, quantity: String(Number(line.quantity || 0) + 1) } : line);
+        const emptyIndex = current.findIndex((line) => !line.productId);
+        if (emptyIndex >= 0) return current.map((line, index) => index === emptyIndex ? { ...line, productId, quantity: '1' } : line);
+        return [...current, { productId, quantity: '1', discount: '0' }];
+      });
+      setProducts((current) => current.some((item) => String(item.id) === productId) ? current : [...current, product]);
+      setBarcode('');
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo buscar el código de barras'); }
+    finally { setScanning(false); }
+  }
   if (!can('sales.write')) return <ErrorState message="No tienes permiso para crear ventas." />;
   if (loading) return <Loading />;
   const estimate = lines.reduce((total, line) => {
@@ -367,7 +391,7 @@ function SaleCreatePage() {
     return total + taxable + taxes;
   }, 0);
   const select = (label: string, value: string, update: (next: string) => void, rows: Row[]) => <label>{label}<select required value={value} onChange={(event) => update(event.target.value)}><option value="">Selecciona…</option>{rows.map((row) => <option key={String(row.id)} value={String(row.id)}>{String(row.name ?? row.sku ?? row.id)}</option>)}</select></label>;
-  return <div className="panel"><p className="eyebrow">VENTAS</p><h2>Nueva venta</h2><p className="muted">Agrega productos y confirma la operación. El servidor calcula los totales y descuenta el stock al confirmar.</p>{error && <ErrorState message={error} />}<form className="product-form" onSubmit={(event) => void submit(event)}>{select('Cliente', customerId, setCustomerId, customers)}{select('Almacén', warehouseId, setWarehouseId, warehouses)}<div className="sale-lines"><div className="panel-title"><h3>Productos</h3><button type="button" onClick={() => setLines((items) => [...items, { productId: '', quantity: '1', discount: '0' }])}>+ Agregar producto</button></div>{lines.map((line, index) => <div className="sale-line" key={index}><label>Producto<select required value={line.productId} onChange={(event) => setLines((items) => items.map((item, i) => i === index ? { ...item, productId: event.target.value } : item))}><option value="">Selecciona…</option>{products.filter((product) => String(product.id) === line.productId || !lines.some((item, i) => i !== index && item.productId === String(product.id))).map((product) => <option key={String(product.id)} value={String(product.id)}>{String(product.sku ?? '')} · {String(product.name)} · {Number(product.salePrice ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</option>)}</select></label><label>Cantidad<input type="number" min="1" step="1" required value={line.quantity} onChange={(event) => setLines((items) => items.map((item, i) => i === index ? { ...item, quantity: event.target.value } : item))} /></label><label>Descuento %<input type="number" min="0" max="100" step="0.01" value={line.discount} onChange={(event) => setLines((items) => items.map((item, i) => i === index ? { ...item, discount: event.target.value } : item))} /></label><button type="button" disabled={lines.length === 1} onClick={() => setLines((items) => items.filter((_, i) => i !== index))}>Quitar</button></div>)}</div><label>Notas<textarea maxLength={500} value={notes} onChange={(event) => setNotes(event.target.value)} /></label><div className="sale-estimate"><span>Total estimado</span><strong>{estimate.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</strong><small>El total definitivo lo calcula la API.</small></div><div className="form-actions"><Link className="secondary-button" to="/sales">Cancelar</Link><button className="primary" disabled={saving || !customers.length || !warehouses.length || !products.length || lines.some((line) => !line.productId)}>{saving ? 'Guardando…' : 'Crear venta pendiente'}</button></div></form></div>;
+  return <div className="panel"><p className="eyebrow">VENTAS</p><h2>Nueva venta</h2><p className="muted">Agrega productos con el lector de código de barras o manualmente. El servidor calcula los totales y descuenta el stock al confirmar.</p>{error && <ErrorState message={error} />}<form className="product-form" onSubmit={(event) => void submit(event)}>{select('Cliente', customerId, setCustomerId, customers)}{select('Almacén', warehouseId, setWarehouseId, warehouses)}<div className="sale-lines"><div className="panel-title"><h3>Productos</h3><button type="button" onClick={() => setLines((items) => [...items, { productId: '', quantity: '1', discount: '0' }])}>+ Agregar producto</button></div><div className="barcode-entry"><label htmlFor="sale-barcode">Escanear código de barras</label><div><input id="sale-barcode" autoComplete="off" inputMode="none" placeholder="Escanea o escribe el código y presiona Enter" value={barcode} onChange={(event) => setBarcode(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void addScannedProduct(event); }} /><button type="button" disabled={scanning || !barcode.trim()} onClick={() => void addScannedProduct()}>{scanning ? 'Buscando…' : 'Agregar'}</button></div><small>Los lectores USB que escriben como teclado funcionan aquí. Cada lectura agrega una unidad.</small></div>{lines.map((line, index) => <div className="sale-line" key={index}><label>Producto<select required value={line.productId} onChange={(event) => setLines((items) => items.map((item, i) => i === index ? { ...item, productId: event.target.value } : item))}><option value="">Selecciona…</option>{products.filter((product) => String(product.id) === line.productId || !lines.some((item, i) => i !== index && item.productId === String(product.id))).map((product) => <option key={String(product.id)} value={String(product.id)}>{String(product.sku ?? '')} · {String(product.name)} · {Number(product.salePrice ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</option>)}</select></label><label>Cantidad<input type="number" min="1" step="1" required value={line.quantity} onChange={(event) => setLines((items) => items.map((item, i) => i === index ? { ...item, quantity: event.target.value } : item))} /></label><label>Descuento %<input type="number" min="0" max="100" step="0.01" value={line.discount} onChange={(event) => setLines((items) => items.map((item, i) => i === index ? { ...item, discount: event.target.value } : item))} /></label><button type="button" disabled={lines.length === 1} onClick={() => setLines((items) => items.filter((_, i) => i !== index))}>Quitar</button></div>)}</div><label>Notas<textarea maxLength={500} value={notes} onChange={(event) => setNotes(event.target.value)} /></label><div className="sale-estimate"><span>Total estimado</span><strong>{estimate.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</strong><small>El total definitivo lo calcula la API.</small></div><div className="form-actions"><Link className="secondary-button" to="/sales">Cancelar</Link><button className="primary" disabled={saving || !customers.length || !warehouses.length || !products.length || lines.some((line) => !line.productId)}>{saving ? 'Guardando…' : 'Crear venta pendiente'}</button></div></form></div>;
 }
 
 function SalesPage() {

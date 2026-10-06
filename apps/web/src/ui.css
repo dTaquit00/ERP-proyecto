@@ -129,6 +129,13 @@ td a:hover { text-decoration: underline; }
 .sale-line label { display: grid; gap: 6px; color: #555b70; font-size: 10px; }
 .sale-line input, .sale-line select { width: 100%; min-width: 0; padding: 9px; border: 1px solid #dfe1e9; border-radius: 7px; background: #fff; }
 .sale-line > button, .sale-lines .panel-title > button { padding: 8px 11px; border: 1px solid #dedfeb; border-radius: 7px; background: #fff; color: #51566c; cursor: pointer; }
+.barcode-entry { display: grid; gap: 7px; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; background: #f8f7fc; }
+.barcode-entry > label { color: var(--ink); font-size: 12px; font-weight: 700; }
+.barcode-entry > div { display: flex; gap: 8px; }
+.barcode-entry input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+.barcode-entry button { padding: 8px 14px; border: 0; border-radius: 7px; background: var(--green); color: #fff; cursor: pointer; }
+.barcode-entry button:disabled { opacity: .55; cursor: wait; }
+.barcode-entry small { color: var(--muted); }
 .tax-list { display: grid; grid-column: 1 / -1; gap: 8px; padding-top: 9px; border-top: 1px solid #eff0f5; }
 .tax-list .panel-title strong { color: #666b7e; font-size: 10px; }
 .tax-row { display: grid; grid-template-columns: minmax(130px, 1fr) 120px auto; gap: 8px; }

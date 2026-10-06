@@ -13,7 +13,7 @@
 | M09 Suppliers | Sí | CRUD, baja lógica e historial de compras | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
 | M10 Warehouses | Sí | CRUD, asociación a sucursal e inventario por almacén | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
 | M11 Inventory | Sí | Existencias, movimientos y creación de operaciones | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
-| M12 Sales | Sí | Multiartículo, listado, detalle/historial y transiciones | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M12 Sales | Sí | Multiartículo, lector teclado de barcode/QR, listado, detalle/historial y transiciones | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
 | M13 Purchases | Sí | Multiartículo, recepción parcial, detalle/historial y transiciones | No | Parcial | Sí | No | Sí | Sí | Integrado web; falta E2E |
 | M14 Dashboard | Sí | Indicadores y ventas/compras/movimientos recientes reales | Dashboard | No | Parcial | No | Sí | Sí | Integrado web; falta E2E |
 | M15 Reports | CSV/PDF | Selección de tipo, formato y filtros | No | No | Parcial | No | Límite/injection | Sí | Integrado web; falta E2E |
@@ -33,7 +33,6 @@
 
 ## Pendientes que no deben marcarse como terminados
 
-- Flujo POS con lector de códigos de barras/QR.
 - Navegación y flujos de negocio móviles.
 - E2E de negocio venta/compra/inventario/auditoría/aislamiento.
 - Streaming de exportaciones grandes.
