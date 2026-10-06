@@ -4,7 +4,7 @@
 |---|---|---|---|---|---|---|---|---|---|
 | M01 Auth | Sí | Login, refresh, cambio/recuperación de contraseña y expiración inmediata de sesiones revocadas | Login + refresh base | Sí | Sí | Smoke preparado | Sí | Sí | Integrado web; falta E2E |
 | M02 Users | Sí | CRUD, activación, historial y revocación de todas las sesiones activas | No | Sí | Sí | No | RBAC | Sí | Integrado web; falta E2E |
-| M03 RBAC | Sí | Sidebar y edición de permisos/roles | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
+| M03 RBAC | Sí | Sidebar y edición de permisos/roles con catálogo servido por API | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
 | M04 Companies | Sí | Consulta/edición de perfil y settings JSON | No | Sí | Sí | No | Bootstrap restringido | Sí | Integrado web; alta solo plataforma |
 | M05 Branches | Sí | CRUD y activar/desactivar | No | Parcial | Sí | No | Multiempresa | Sí | Integrado web; falta E2E |
 | M06 Categories | Sí | CRUD y desactivación | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |

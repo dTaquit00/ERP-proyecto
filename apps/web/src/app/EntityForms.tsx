@@ -7,15 +7,29 @@ type Row = Record<string, unknown>;
 type EntityKind = 'customers' | 'suppliers' | 'warehouses' | 'branches' | 'companies' | 'users' | 'roles';
 type Field = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'number' | 'url' | 'password' | 'textarea' | 'select'; required?: boolean; options?: Array<{ value: string; label: string }> };
 
-const permissionGroups: Array<{ title: string; values: string[] }> = [
-  { title: 'Usuarios y roles', values: ['users.read', 'users.write', 'roles.read', 'roles.write'] },
-  { title: 'Empresas y sucursales', values: ['companies.read', 'companies.write', 'branches.read', 'branches.write'] },
-  { title: 'Catálogo', values: ['categories.read', 'categories.write', 'products.read', 'products.write'] },
-  { title: 'Contactos', values: ['customers.read', 'customers.write', 'suppliers.read', 'suppliers.write'] },
-  { title: 'Almacén e inventario', values: ['warehouses.read', 'warehouses.write', 'inventory.read', 'inventory.write', 'inventory.adjust', 'inventory.transfer'] },
-  { title: 'Ventas', values: ['sales.read', 'sales.write', 'sales.confirm', 'sales.cancel', 'sales.return'] },
-  { title: 'Compras', values: ['purchases.read', 'purchases.write', 'purchases.confirm', 'purchases.receive', 'purchases.cancel'] },
-  { title: 'Reportes y auditoría', values: ['dashboard.read', 'reports.read', 'reports.export', 'audit.read', 'settings.read', 'settings.write'] },
+const permissionGroupTitles: Record<string, string> = {
+  users: 'Usuarios y roles', roles: 'Usuarios y roles',
+  companies: 'Empresas y sucursales', branches: 'Empresas y sucursales',
+  categories: 'Catálogo', products: 'Catálogo',
+  customers: 'Contactos', suppliers: 'Contactos',
+  warehouses: 'Almacén e inventario', inventory: 'Almacén e inventario',
+  sales: 'Ventas', purchases: 'Compras',
+  dashboard: 'Reportes y auditoría', reports: 'Reportes y auditoría', audit: 'Reportes y auditoría', settings: 'Reportes y auditoría',
+};
+
+function groupPermissions(permissions: string[]): Array<{ title: string; values: string[] }> {
+  const groups = new Map<string, string[]>();
+  for (const permission of permissions) {
+    const prefix = permission.split('.')[0] ?? '';
+    const title = permissionGroupTitles[prefix] ?? 'Otros permisos';
+    groups.set(title, [...(groups.get(title) ?? []), permission]);
+  }
+  return [...groups].map(([title, values]) => ({ title, values }));
+}
+
+const permissionGroupOrder = [
+  'Usuarios y roles', 'Empresas y sucursales', 'Catálogo', 'Contactos',
+  'Almacén e inventario', 'Ventas', 'Compras', 'Reportes y auditoría', 'Otros permisos',
 ];
 
 const fieldsFor: Record<Exclude<EntityKind, 'users' | 'roles'>, Field[]> = {
@@ -81,6 +95,8 @@ export function EntityFormPage() {
   const [values, setValues] = useState<Row>({ isActive: true, status: 'active', permissions: [] });
   const [branches, setBranches] = useState<Row[]>([]);
   const [roles, setRoles] = useState<Row[]>([]);
+  const [permissionCatalog, setPermissionCatalog] = useState<string[]>([]);
+  const [permissionCatalogLoading, setPermissionCatalogLoading] = useState(false);
   const [userHistory, setUserHistory] = useState<Row | null>(null);
   const [userHistoryError, setUserHistoryError] = useState('');
   const [relatedHistory, setRelatedHistory] = useState<Row[]>([]);
@@ -103,6 +119,13 @@ export function EntityFormPage() {
     let active = true;
     setUserHistoryError(''); setRelatedHistoryError(''); setWarehouseStockError('');
     if (!isKnown) return () => { active = false; };
+    if (kind === 'roles') {
+      setPermissionCatalogLoading(true);
+      apiRequest<{ permissions: string[] }>('/permissions')
+        .then((result) => { if (active) setPermissionCatalog(result.permissions ?? []); })
+        .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudo cargar el catálogo de permisos'); })
+        .finally(() => { if (active) setPermissionCatalogLoading(false); });
+    }
     if (kind === 'warehouses') apiRequest<{ items: Row[] }>('/branches?limit=100&status=active').then((result) => { if (active) setBranches(result.items ?? []); }).catch(() => undefined);
     if (kind === 'users') apiRequest<{ items: Row[] }>('/roles?limit=100').then((result) => { if (active) setRoles(result.items ?? []); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar los roles'); });
     if (kind === 'users' && id) apiRequest<Row>(`/users/${id}/history`).then((result) => { if (active) setUserHistory(result); }).catch((reason) => { if (active) setUserHistoryError(reason instanceof Error ? reason.message : 'No se pudo cargar el historial de acceso'); });
@@ -128,6 +151,9 @@ export function EntityFormPage() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setSaving(true); setError('');
+    if (kind === 'roles' && (!permissionCatalog.length || permissionCatalogLoading)) {
+      setSaving(false); setError('No se pudo cargar el catálogo de permisos. Vuelve a abrir el formulario antes de guardar.'); return;
+    }
     const body: Row = { ...values };
     delete body.id; delete body.companyId; delete body.createdAt; delete body.updatedAt; delete body.isSystem; delete body.userCount;
     if (kind === 'companies') {
@@ -207,7 +233,7 @@ export function EntityFormPage() {
             : field.type === 'textarea' ? <textarea maxLength={1000} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />
               : <input type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'} minLength={field.key === 'password' ? 12 : undefined} maxLength={field.key === 'password' ? 128 : 254} required={field.required} disabled={Boolean(kind === 'roles' && id && field.key === 'name')} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />}
       </label>)}
-      {kind === 'roles' && <fieldset className="permission-grid"><legend>Permisos del rol</legend>{permissionGroups.map((group) => <section key={group.title}><h3>{group.title}</h3>{group.values.map((permission) => <label className="checkbox-label" key={permission}><input type="checkbox" checked={roleFields.includes(permission)} onChange={(event) => update('permissions', event.target.checked ? [...roleFields, permission] : roleFields.filter((value) => value !== permission))} />{permission}</label>)}</section>)}</fieldset>}
+      {kind === 'roles' && <fieldset className="permission-grid"><legend>Permisos del rol</legend>{permissionCatalogLoading ? <p className="muted">Cargando permisos disponibles…</p> : permissionCatalog.length ? groupPermissions(permissionCatalog).sort((a, b) => permissionGroupOrder.indexOf(a.title) - permissionGroupOrder.indexOf(b.title)).map((group) => <section key={group.title}><h3>{group.title}</h3>{group.values.map((permission) => <label className="checkbox-label" key={permission}><input type="checkbox" checked={roleFields.includes(permission)} onChange={(event) => update('permissions', event.target.checked ? [...roleFields, permission] : roleFields.filter((value) => value !== permission))} />{permission}</label>)}</section>) : <p className="error">El catálogo de permisos no está disponible; no guardes cambios hasta poder cargarlo.</p>}</fieldset>}
       {kind === 'users' && id && <section className="user-history"><h3>Historial de acceso</h3>{userHistoryError ? <p className="error">{userHistoryError}</p> : userHistory ? <><p>Cuenta creada: {userHistory.createdAt ? new Date(String(userHistory.createdAt)).toLocaleString('es-MX') : '—'}</p><p>Último inicio de sesión: {userHistory.lastLoginAt ? new Date(String(userHistory.lastLoginAt)).toLocaleString('es-MX') : 'Sin registros'}</p><p>Contraseña cambiada: {userHistory.passwordChangedAt ? new Date(String(userHistory.passwordChangedAt)).toLocaleString('es-MX') : '—'}</p><h4>Sesiones</h4>{((userHistory.sessions as Row[]) ?? []).length ? <ul>{((userHistory.sessions as Row[]) ?? []).map((session, index) => <li key={String(session.id ?? index)}>{session.active ? 'Activa' : session.revokedAt ? 'Revocada' : 'Expirada'} · último uso {session.lastUsedAt ? new Date(String(session.lastUsedAt)).toLocaleString('es-MX') : '—'} · vence {session.expiresAt ? new Date(String(session.expiresAt)).toLocaleString('es-MX') : '—'}</li>)}</ul> : <p className="muted">No hay sesiones para mostrar.</p>}{can('users.write') && ((userHistory.sessions as Row[]) ?? []).some((session) => session.active) && <button type="button" disabled={saving} onClick={() => void revokeUserSessions()}>{saving ? 'Cerrando sesiones…' : 'Cerrar todas las sesiones activas'}</button>}</> : <p className="muted">Cargando historial de acceso…</p>}</section>}
       {id && ['customers', 'suppliers'].includes(kind) && <section className="user-history"><h3>{kind === 'customers' ? 'Historial de ventas del cliente' : 'Historial de compras al proveedor'}</h3>{relatedHistoryError ? <p className="error">{relatedHistoryError}</p> : relatedHistoryLoading ? <p className="muted">Cargando historial…</p> : relatedHistory.length ? <ul>{relatedHistory.map((entry) => <li key={String(entry.id)}>{entry.saleDate || entry.purchaseDate ? new Date(String(entry.saleDate ?? entry.purchaseDate)).toLocaleDateString('es-MX') : 'Fecha desconocida'} · {String(entry.status)} · {Number(entry.total ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</li>)}</ul> : <p className="muted">No hay operaciones registradas para esta ficha.</p>}</section>}
       {kind === 'warehouses' && id && canReadInventory && <section className="user-history"><h3>Existencias en este almacén</h3>{warehouseStockError ? <p className="error">{warehouseStockError}</p> : warehouseStockLoading ? <p className="muted">Cargando existencias…</p> : warehouseStock.length ? <div className="table-panel"><table><thead><tr><th>Producto</th><th>Existencia</th><th>Mínimo</th><th>Estado</th></tr></thead><tbody>{warehouseStock.map((stock, index) => { const quantity = Number(stock.quantity ?? 0); const availability = quantity <= 0 ? 'Agotado' : stock.lowStock === true ? 'Stock bajo' : 'Disponible'; return <tr key={String(stock.id ?? index)}><td>{String(stock.productName ?? stock.productSku ?? '—')}</td><td>{String(quantity)}</td><td>{String(stock.minStock ?? 0)}</td><td>{availability}</td></tr>; })}</tbody></table></div> : <p className="muted">Este almacén todavía no tiene existencias.</p>}</section>}
@@ -215,7 +241,7 @@ export function EntityFormPage() {
       {kind === 'warehouses' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} onChange={(event) => update('isActive', event.target.checked)} />Almacén activo</label>}
       {kind === 'customers' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} onChange={(event) => update('isActive', event.target.checked)} />Cliente activo</label>}
       {kind === 'suppliers' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} onChange={(event) => update('isActive', event.target.checked)} />Proveedor activo</label>}
-      <div className="form-actions"><Link className="secondary-button" to={`/${kind}`}>Volver</Link>{kind === 'users' && id && <button type="button" disabled={saving} onClick={() => void toggleUser()}>{values.isActive === false ? 'Activar usuario' : 'Desactivar usuario'}</button>}{kind === 'roles' && isSystemRole && <span className="muted">No puedes eliminar un rol del sistema.</span>}{kind === 'roles' && id && !isSystemRole && <button type="button" disabled={saving || Number(values.userCount) > 0} onClick={() => void deleteRole()} title={Number(values.userCount) > 0 ? 'No se puede eliminar un rol asignado' : undefined}>Eliminar rol</button>}<button className="primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button></div>
+      <div className="form-actions"><Link className="secondary-button" to={`/${kind}`}>Volver</Link>{kind === 'users' && id && <button type="button" disabled={saving} onClick={() => void toggleUser()}>{values.isActive === false ? 'Activar usuario' : 'Desactivar usuario'}</button>}{kind === 'roles' && isSystemRole && <span className="muted">No puedes eliminar un rol del sistema.</span>}{kind === 'roles' && id && !isSystemRole && <button type="button" disabled={saving || Number(values.userCount) > 0} onClick={() => void deleteRole()} title={Number(values.userCount) > 0 ? 'No se puede eliminar un rol asignado' : undefined}>Eliminar rol</button>}<button className="primary" disabled={saving || (kind === 'roles' && (permissionCatalogLoading || !permissionCatalog.length))}>{saving ? 'Guardando…' : 'Guardar cambios'}</button></div>
     </form>
   </div>;
 }
