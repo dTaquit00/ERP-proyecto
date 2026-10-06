@@ -55,4 +55,11 @@ export const usersController = {
     const { id } = parseOrThrow(idParamsSchema, req.params);
     return sendOk(res, await usersService.history(auth.user.companyId, id));
   }) satisfies RequestHandler,
+
+  revokeSessions: (async (req: Request, res: Response) => {
+    const auth = requireAuth(req);
+    const { id } = parseOrThrow(idParamsSchema, req.params);
+    await usersService.revokeSessions(auth.user.companyId, id, auth.user.id);
+    return sendOk(res, { message: 'Sesiones revocadas' });
+  }) satisfies RequestHandler,
 };

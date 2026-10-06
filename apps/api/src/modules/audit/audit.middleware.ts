@@ -26,6 +26,7 @@ function businessAction(method: string, resource: string, tail: string[], body: 
     const transition: Record<string, string> = {
       confirm: 'CONFIRMED', cancel: 'CANCELLED', return: 'RETURNED', receive: 'RECEIVED',
       deactivate: 'DEACTIVATED', activate: 'ACTIVATED',
+      'revoke-sessions': 'SESSIONS_REVOKED',
     };
     const suffix = transition[tail[1] ?? ''];
     if (suffix) return `${entity}_${suffix}`;

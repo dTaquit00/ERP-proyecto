@@ -12,6 +12,7 @@ usersRoutes.get('/', authorize('users.read'), usersController.list);
 usersRoutes.get('/:id/history', authorize('users.read'), usersController.history);
 usersRoutes.get('/:id', authorize('users.read'), usersController.get);
 
+usersRoutes.post('/:id/revoke-sessions', authorize('users.write'), usersController.revokeSessions);
 usersRoutes.post('/', authorize('users.write'), usersController.create);
 usersRoutes.patch('/:id', authorize('users.write'), usersController.update);
 usersRoutes.post('/:id/activate', authorize('users.write'), usersController.activate);

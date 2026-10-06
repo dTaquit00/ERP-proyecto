@@ -193,4 +193,10 @@ export const usersService = {
       })),
     };
   },
+
+  async revokeSessions(companyId: string, id: string, actorId: string): Promise<void> {
+    const user = await findScopedOr404(companyId, id);
+    await sessionsRepository.revokeAllForUser(user.id);
+    logger.warn({ userId: user.id, actorId, companyId }, 'Sesiones de usuario revocadas');
+  },
 };

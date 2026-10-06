@@ -3,7 +3,7 @@
 | Módulo | Backend | Web | Mobile | Unit | Integration | E2E | Security | Docs | Estado |
 |---|---|---|---|---|---|---|---|---|---|
 | M01 Auth | Sí | Login, refresh, cambio y recuperación/restablecimiento de contraseña | Login + refresh base | Sí | Sí | Smoke preparado | Sí | Sí | Integrado web; falta E2E |
-| M02 Users | Sí | CRUD, activación y sesiones/historial | No | Sí | Sí | No | RBAC | Sí | Integrado web; falta E2E |
+| M02 Users | Sí | CRUD, activación, historial y revocación de todas las sesiones activas | No | Sí | Sí | No | RBAC | Sí | Integrado web; falta E2E |
 | M03 RBAC | Sí | Sidebar y edición de permisos/roles | No | Sí | Sí | No | Sí | Sí | Integrado web; falta E2E |
 | M04 Companies | Sí | Consulta/edición de perfil y settings JSON | No | Sí | Sí | No | Bootstrap restringido | Sí | Integrado web; alta solo plataforma |
 | M05 Branches | Sí | CRUD y activar/desactivar | No | Parcial | Sí | No | Multiempresa | Sí | Integrado web; falta E2E |
