@@ -5,7 +5,7 @@ import { apiRequest } from '../services/api';
 
 type Row = Record<string, unknown>;
 type EntityKind = 'customers' | 'suppliers' | 'warehouses' | 'branches' | 'companies' | 'users' | 'roles';
-type Field = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'number' | 'url' | 'password' | 'textarea' | 'select'; required?: boolean; options?: Array<{ value: string; label: string }> };
+type Field = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'number' | 'url' | 'password' | 'textarea' | 'select'; required?: boolean; minLength?: number; maxLength?: number; options?: Array<{ value: string; label: string }> };
 
 const permissionGroupTitles: Record<string, string> = {
   users: 'Usuarios y roles', roles: 'Usuarios y roles',
@@ -34,34 +34,34 @@ const permissionGroupOrder = [
 
 const fieldsFor: Record<Exclude<EntityKind, 'users' | 'roles'>, Field[]> = {
   customers: [
-    { key: 'name', label: 'Nombre', required: true }, { key: 'email', label: 'Correo', type: 'email' },
-    { key: 'phone', label: 'Teléfono', type: 'tel' }, { key: 'dni', label: 'Identificación' },
-    { key: 'address.street', label: 'Calle y número' }, { key: 'address.city', label: 'Ciudad' },
-    { key: 'address.state', label: 'Estado / provincia' }, { key: 'address.zipCode', label: 'Código postal' },
-    { key: 'notes', label: 'Notas', type: 'textarea' },
+    { key: 'name', label: 'Nombre', required: true, minLength: 2, maxLength: 120 }, { key: 'email', label: 'Correo', type: 'email', maxLength: 254 },
+    { key: 'phone', label: 'Teléfono', type: 'tel', maxLength: 30 }, { key: 'dni', label: 'Identificación', maxLength: 20 },
+    { key: 'address.street', label: 'Calle y número', maxLength: 200 }, { key: 'address.city', label: 'Ciudad', maxLength: 100 },
+    { key: 'address.state', label: 'Estado / provincia', maxLength: 100 }, { key: 'address.zipCode', label: 'Código postal', maxLength: 20 },
+    { key: 'notes', label: 'Notas', type: 'textarea', maxLength: 1000 },
   ],
   suppliers: [
-    { key: 'name', label: 'Razón social / nombre', required: true }, { key: 'contactName', label: 'Persona de contacto' },
-    { key: 'email', label: 'Correo', type: 'email' }, { key: 'phone', label: 'Teléfono', type: 'tel' },
-    { key: 'ruc', label: 'RFC / identificación fiscal' }, { key: 'address.street', label: 'Calle y número' },
-    { key: 'address.city', label: 'Ciudad' }, { key: 'address.state', label: 'Estado / provincia' },
-    { key: 'address.zipCode', label: 'Código postal' }, { key: 'notes', label: 'Notas', type: 'textarea' },
+    { key: 'name', label: 'Razón social / nombre', required: true, minLength: 2, maxLength: 120 }, { key: 'contactName', label: 'Persona de contacto', maxLength: 120 },
+    { key: 'email', label: 'Correo', type: 'email', maxLength: 254 }, { key: 'phone', label: 'Teléfono', type: 'tel', maxLength: 30 },
+    { key: 'ruc', label: 'RFC / identificación fiscal', maxLength: 20 }, { key: 'address.street', label: 'Calle y número', maxLength: 200 },
+    { key: 'address.city', label: 'Ciudad', maxLength: 100 }, { key: 'address.state', label: 'Estado / provincia', maxLength: 100 },
+    { key: 'address.zipCode', label: 'Código postal', maxLength: 20 }, { key: 'notes', label: 'Notas', type: 'textarea', maxLength: 1000 },
   ],
   warehouses: [
-    { key: 'name', label: 'Nombre del almacén', required: true }, { key: 'address', label: 'Dirección' },
+    { key: 'name', label: 'Nombre del almacén', required: true, minLength: 2, maxLength: 80 }, { key: 'address', label: 'Dirección', maxLength: 200 },
     { key: 'branchId', label: 'Sucursal', type: 'select', options: [{ value: '', label: 'Sin sucursal' }] },
   ],
   branches: [
-    { key: 'code', label: 'Código', required: true }, { key: 'name', label: 'Nombre', required: true },
-    { key: 'address', label: 'Dirección' }, { key: 'phone', label: 'Teléfono', type: 'tel' },
-    { key: 'email', label: 'Correo', type: 'email' }, { key: 'manager', label: 'Responsable' },
+    { key: 'code', label: 'Código', required: true, minLength: 1, maxLength: 40 }, { key: 'name', label: 'Nombre', required: true, minLength: 1, maxLength: 120 },
+    { key: 'address', label: 'Dirección', maxLength: 300 }, { key: 'phone', label: 'Teléfono', type: 'tel', maxLength: 50 },
+    { key: 'email', label: 'Correo', type: 'email', maxLength: 254 }, { key: 'manager', label: 'Responsable', maxLength: 160 },
   ],
   companies: [
-    { key: 'name', label: 'Nombre comercial', required: true }, { key: 'legalName', label: 'Razón social' },
-    { key: 'taxId', label: 'RFC / identificación fiscal' }, { key: 'phone', label: 'Teléfono', type: 'tel' },
-    { key: 'email', label: 'Correo', type: 'email' }, { key: 'address', label: 'Dirección' },
+    { key: 'name', label: 'Nombre comercial', required: true, minLength: 1, maxLength: 200 }, { key: 'legalName', label: 'Razón social', maxLength: 200 },
+    { key: 'taxId', label: 'RFC / identificación fiscal', maxLength: 50 }, { key: 'phone', label: 'Teléfono', type: 'tel', maxLength: 50 },
+    { key: 'email', label: 'Correo', type: 'email', maxLength: 254 }, { key: 'address', label: 'Dirección', maxLength: 300 },
     { key: 'status', label: 'Estado', type: 'select', options: [{ value: 'active', label: 'Activa' }, { value: 'inactive', label: 'Inactiva' }] },
-    { key: 'settingsJson', label: 'Configuración (JSON)', type: 'textarea' },
+    { key: 'settingsJson', label: 'Configuración (JSON)', type: 'textarea', maxLength: 1000 },
   ],
 };
 
@@ -232,8 +232,8 @@ export function EntityFormPage() {
   if (id && !entityLoaded) return <div className="panel"><h2>No se pudo abrir este {title}</h2><p className="error">{error || `No se pudo cargar el ${title}.`}</p><Link className="secondary-button" to={`/${kind}`}>Volver al listado</Link></div>;
 
   const fields = kind === 'users'
-    ? [{ key: 'firstName', label: 'Nombre', required: true }, { key: 'lastName', label: 'Apellido', required: true }, { key: 'email', label: 'Correo', type: 'email' as const, required: true }, { key: 'roleId', label: 'Rol', type: 'select' as const, required: true }, ...(!id ? [{ key: 'password', label: 'Contraseña inicial (mínimo 12 caracteres)', type: 'password' as const, required: true }] : [])]
-    : kind === 'roles' ? [{ key: 'name', label: 'Clave del rol (minúsculas, guiones o guion bajo)', required: true }, { key: 'displayName', label: 'Nombre visible', required: true }]
+    ? [{ key: 'firstName', label: 'Nombre', required: true, minLength: 1, maxLength: 100 }, { key: 'lastName', label: 'Apellido', required: true, minLength: 1, maxLength: 100 }, { key: 'email', label: 'Correo', type: 'email' as const, required: true, maxLength: 254 }, { key: 'roleId', label: 'Rol', type: 'select' as const, required: true }, ...(!id ? [{ key: 'password', label: 'Contraseña inicial (mínimo 12 caracteres)', type: 'password' as const, required: true, minLength: 12, maxLength: 128 }] : [])]
+    : kind === 'roles' ? [{ key: 'name', label: 'Clave del rol (minúsculas, guiones o guion bajo)', required: true, minLength: 2, maxLength: 60 }, { key: 'displayName', label: 'Nombre visible', required: true, minLength: 1, maxLength: 100 }]
       : fieldsFor[kind];
 
   return <div className="panel entity-form-panel">
@@ -247,8 +247,8 @@ export function EntityFormPage() {
           : field.key === 'roleId' ? <select required value={String(values.roleId ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}><option value="">Selecciona un rol</option>{roles.map((role) => <option key={String(role.id)} value={String(role.id)}>{String(role.displayName ?? role.name)}</option>)}</select>
           : field.key === 'branchId' ? <select value={String(values.branchId ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}><option value="">Sin sucursal</option>{branches.map((branch) => <option key={String(branch.id)} value={String(branch.id)}>{String(branch.name)}</option>)}</select>
             : field.type === 'select' ? <select required={field.required} value={String(values[field.key] ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}>{(field.options ?? []).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
-            : field.type === 'textarea' ? <textarea maxLength={1000} value={readValue(values, field.key)} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)} />
-              : <input type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'} minLength={field.key === 'password' ? 12 : undefined} maxLength={field.key === 'password' ? 128 : 254} required={field.required} disabled={!canWrite || Boolean(kind === 'roles' && id && field.key === 'name')} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />}
+          : field.type === 'textarea' ? <textarea minLength={field.minLength} maxLength={field.maxLength ?? 1000} value={readValue(values, field.key)} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)} />
+              : <input type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'} minLength={field.minLength} maxLength={field.maxLength ?? 254} required={field.required} disabled={!canWrite || Boolean(kind === 'roles' && id && field.key === 'name')} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />}
       </label>)}
       {kind === 'roles' && <fieldset className="permission-grid"><legend>Permisos del rol</legend>{!canWrite ? roleFields.length ? <ul>{roleFields.map((permission) => <li key={permission}>{permission}</li>)}</ul> : <p className="muted">Este rol no tiene permisos asignados.</p> : permissionCatalogLoading ? <p className="muted">Cargando permisos disponibles…</p> : permissionCatalog.length ? groupPermissions(permissionCatalog).sort((a, b) => permissionGroupOrder.indexOf(a.title) - permissionGroupOrder.indexOf(b.title)).map((group) => <section key={group.title}><h3>{group.title}</h3>{group.values.map((permission) => <label className="checkbox-label" key={permission}><input type="checkbox" checked={roleFields.includes(permission)} onChange={(event) => update('permissions', event.target.checked ? [...roleFields, permission] : roleFields.filter((value) => value !== permission))} />{permission}</label>)}</section>) : <p className="error">El catálogo de permisos no está disponible; no guardes cambios hasta poder cargarlo.</p>}</fieldset>}
       {kind === 'users' && id && <section className="user-history"><h3>Historial de acceso</h3>{userHistoryError ? <p className="error">{userHistoryError}</p> : userHistory ? <><p>Cuenta creada: {userHistory.createdAt ? new Date(String(userHistory.createdAt)).toLocaleString('es-MX') : '—'}</p><p>Último inicio de sesión: {userHistory.lastLoginAt ? new Date(String(userHistory.lastLoginAt)).toLocaleString('es-MX') : 'Sin registros'}</p><p>Contraseña cambiada: {userHistory.passwordChangedAt ? new Date(String(userHistory.passwordChangedAt)).toLocaleString('es-MX') : '—'}</p><h4>Sesiones</h4>{((userHistory.sessions as Row[]) ?? []).length ? <ul>{((userHistory.sessions as Row[]) ?? []).map((session, index) => <li key={String(session.id ?? index)}>{session.active ? 'Activa' : session.revokedAt ? 'Revocada' : 'Expirada'} · último uso {session.lastUsedAt ? new Date(String(session.lastUsedAt)).toLocaleString('es-MX') : '—'} · vence {session.expiresAt ? new Date(String(session.expiresAt)).toLocaleString('es-MX') : '—'}</li>)}</ul> : <p className="muted">No hay sesiones para mostrar.</p>}{can('users.write') && ((userHistory.sessions as Row[]) ?? []).some((session) => session.active) && <button type="button" disabled={saving} onClick={() => void revokeUserSessions()}>{saving ? 'Cerrando sesiones…' : 'Cerrar todas las sesiones activas'}</button>}</> : <p className="muted">Cargando historial de acceso…</p>}</section>}
