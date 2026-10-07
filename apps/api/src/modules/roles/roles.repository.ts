@@ -59,6 +59,14 @@ export const rolesRepository = {
     return role;
   },
 
+  async addPermissionToSystemRoles(names: string[], permission: Permission): Promise<number> {
+    const result = await RoleModel.updateMany(
+      { name: { $in: names }, isSystem: true, permissions: { $ne: permission } },
+      { $addToSet: { permissions: permission } },
+    ).exec();
+    return result.modifiedCount;
+  },
+
   async remove(role: RoleDocument): Promise<void> {
     await role.deleteOne();
   },

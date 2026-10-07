@@ -29,6 +29,12 @@ async function findScopedOr404(companyId: string, id: string): Promise<RoleDocum
 }
 
 export const rolesService = {
+  /** Migración aditiva para que vendedor/compras puedan seleccionar almacén. */
+  async ensureOperationalWarehouseRead(): Promise<void> {
+    const modified = await rolesRepository.addPermissionToSystemRoles(['vendedor', 'compras'], 'warehouses.read');
+    if (modified > 0) logger.info({ modified }, 'Permiso warehouses.read agregado a roles operativos');
+  },
+
   /** Crea (de forma idempotente) los 7 roles del sistema para una empresa. */
   async ensureSystemRoles(companyId: string): Promise<void> {
     for (const systemRole of SYSTEM_ROLES) {
@@ -36,9 +42,9 @@ export const rolesService = {
       if (existing) {
         // Migración aditiva de permisos nuevos al volver a ejecutar el seed;
         // conserva cualquier permiso personalizado que ya tuviera el rol.
-        const newOperationPermissions: Permission[] = ['sales.confirm', 'purchases.confirm', 'inventory.adjust'];
+        const newSystemPermissions: Permission[] = ['sales.confirm', 'purchases.confirm', 'inventory.adjust', 'warehouses.read'];
         const additions: Permission[] = systemRole.permissions.filter(
-          (permission) => newOperationPermissions.includes(permission) && !existing.permissions.includes(permission),
+          (permission) => newSystemPermissions.includes(permission) && !existing.permissions.includes(permission),
         );
         if (existing.isSystem && additions.length > 0) {
           await rolesRepository.saveChanges(existing, { permissions: [...existing.permissions.filter(isPermission), ...additions] });

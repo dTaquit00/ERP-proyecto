@@ -2,9 +2,11 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { connectDatabase, disconnectDatabase } from './db/mongoose.js';
+import { rolesService } from './modules/roles/roles.service.js';
 
 async function main(): Promise<void> {
   await connectDatabase();
+  await rolesService.ensureOperationalWarehouseRead();
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {
