@@ -80,9 +80,15 @@ function Shell() {
     ['/roles', 'Roles', can('roles.read'), can('roles.write') && can('roles.read') ? '/roles/new' : undefined],
     ['/audit', 'Auditoría', can('audit.read')],
   ] as const;
+  const createLabels: Record<string, string> = {
+    Productos: 'Nuevo producto', Categorías: 'Nueva categoría', Clientes: 'Nuevo cliente',
+    Proveedores: 'Nuevo proveedor', Almacenes: 'Nuevo almacén', Sucursales: 'Nueva sucursal',
+    Inventario: 'Registrar movimiento', Ventas: 'Nueva venta', Compras: 'Nueva compra',
+    Usuarios: 'Nuevo usuario', Roles: 'Nuevo rol',
+  };
   const renderLinks = (links: readonly (readonly [string, string, boolean, string?])[]) => links.filter((link) => link[2] || link[3]).map(([path, label, canRead, createPath]) => {
     const target = canRead ? path : createPath ?? path;
-    return <Link className={location.pathname === path || (path !== '/dashboard' && location.pathname.startsWith(path)) ? 'active' : ''} to={target} key={path}>{canRead ? label : `Nuevo ${label.toLowerCase()}`}</Link>;
+    return <Link className={location.pathname === path || (path !== '/dashboard' && location.pathname.startsWith(path)) ? 'active' : ''} to={target} key={path}>{canRead ? label : createLabels[label] ?? `Crear ${label.toLowerCase()}`}</Link>;
   });
 
   return <div className="app-shell">
