@@ -107,6 +107,7 @@ export function EntityFormPage() {
   const [warehouseStockLoading, setWarehouseStockLoading] = useState(false);
   const canReadInventory = can('inventory.read');
   const canReadRoles = can('roles.read');
+  const canReadBranches = can('branches.read');
   const canReadSales = can('sales.read');
   const canReadPurchases = can('purchases.read');
   const [entityLoaded, setEntityLoaded] = useState(!id);
@@ -115,6 +116,7 @@ export function EntityFormPage() {
   const [error, setError] = useState('');
   const writePermission = kind === 'companies' ? 'companies.write' : `${kind}.write`;
   const readPermission = kind === 'companies' ? 'companies.read' : `${kind}.read`;
+  const canReadEntity = can(readPermission);
   const canWrite = can(writePermission);
   const supportsReadOnlyDetail = ['customers', 'suppliers', 'warehouses', 'branches', 'companies', 'users', 'roles'].includes(kind);
   const title = labels[kind] ?? 'registro';
@@ -128,6 +130,7 @@ export function EntityFormPage() {
     setError('');
     setUserHistoryError(''); setRelatedHistoryError(''); setWarehouseStockError('');
     if (!isKnown) return () => { active = false; };
+    if (!canReadEntity) return () => { active = false; };
     if (kind === 'roles' && canWrite) {
       setPermissionCatalogLoading(true);
       apiRequest<{ permissions: string[] }>('/permissions')
@@ -135,7 +138,7 @@ export function EntityFormPage() {
         .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudo cargar el catálogo de permisos'); })
         .finally(() => { if (active) setPermissionCatalogLoading(false); });
     }
-    if (kind === 'warehouses') apiRequest<{ items: Row[] }>('/branches?limit=100&status=active').then((result) => { if (active) setBranches(result.items ?? []); }).catch(() => undefined);
+    if (kind === 'warehouses' && canReadBranches) apiRequest<{ items: Row[] }>('/branches?limit=100&status=active').then((result) => { if (active) setBranches(result.items ?? []); }).catch(() => undefined);
     if (kind === 'users' && canReadRoles) apiRequest<{ items: Row[] }>('/roles?limit=100').then((result) => { if (active) setRoles(result.items ?? []); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar los roles'); });
     if (kind === 'users' && id) apiRequest<Row>(`/users/${id}/history`).then((result) => { if (active) setUserHistory(result); }).catch((reason) => { if (active) setUserHistoryError(reason instanceof Error ? reason.message : 'No se pudo cargar el historial de acceso'); });
     if (kind === 'customers' && id && canReadSales) { setRelatedHistoryLoading(true); apiRequest<{ items: Row[] }>(`/sales?customerId=${encodeURIComponent(id)}&limit=100`).then((result) => { if (active) setRelatedHistory(result.items ?? []); }).catch((reason) => { if (active) setRelatedHistoryError(reason instanceof Error ? reason.message : 'No se pudo cargar el historial de ventas'); }).finally(() => { if (active) setRelatedHistoryLoading(false); }); }
@@ -148,7 +151,7 @@ export function EntityFormPage() {
         .finally(() => { if (active) setLoading(false); });
     }
     return () => { active = false; };
-  }, [id, kind, isKnown, title, canReadInventory, canReadRoles, canReadSales, canReadPurchases, canWrite]);
+  }, [id, kind, isKnown, title, canReadEntity, canReadBranches, canReadInventory, canReadRoles, canReadSales, canReadPurchases, canWrite]);
 
   function update(key: string, value: unknown) {
     setValues((current) => {
@@ -222,7 +225,7 @@ export function EntityFormPage() {
 
   if (!isKnown) return <div className="panel"><h2>Módulo no disponible</h2><p className="muted">No existe un formulario para este recurso.</p></div>;
   if (kind === 'companies' && !id) return <div className="panel"><h2>Alta de empresas no disponible</h2><p className="muted">El registro de nuevas empresas está reservado a la administración de plataforma. Desde aquí puedes consultar y editar la empresa de tu sesión.</p><Link className="secondary-button" to="/companies">Volver a Empresa</Link></div>;
-  if (!can(readPermission) || (!canWrite && (!id || !supportsReadOnlyDetail))) return <div className="error">Tu rol no tiene permiso para {id ? 'consultar' : 'crear'} {title === 'almacén' ? 'el almacén' : `el ${title}`}.</div>;
+  if (!canReadEntity || (!canWrite && (!id || !supportsReadOnlyDetail))) return <div className="error">Tu rol no tiene permiso para {id ? 'consultar' : 'crear'} {title === 'almacén' ? 'el almacén' : `el ${title}`}.</div>;
   if (loading) return <div className="panel"><p className="muted">Cargando {title}…</p></div>;
   if (id && !entityLoaded) return <div className="panel"><h2>No se pudo abrir este {title}</h2><p className="error">{error || `No se pudo cargar el ${title}.`}</p><Link className="secondary-button" to={`/${kind}`}>Volver al listado</Link></div>;
 
