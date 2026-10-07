@@ -2,6 +2,10 @@ import { z } from 'zod';
 import { idParamsSchema, paginationSchema } from './common.schema.js';
 
 const optionalText = (max: number) => z.string().trim().max(max).optional();
+const optionalEmail = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().trim().email('El correo no es válido').max(254).optional(),
+);
 
 export const companySettingsSchema = z.record(z.string(), z.unknown());
 
@@ -10,7 +14,7 @@ const companyFieldsSchema = z.object({
   legalName: optionalText(200),
   taxId: optionalText(50),
   phone: optionalText(50),
-  email: z.string().trim().email('El correo no es válido').max(254).optional(),
+  email: optionalEmail,
   address: optionalText(300),
   status: z.enum(['active', 'inactive']),
   settings: companySettingsSchema.optional(),

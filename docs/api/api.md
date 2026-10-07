@@ -149,7 +149,7 @@ de otra empresa responde `404` para no revelar su existencia.
 | GET | `/companies` | `companies.read` | Lista la empresa del usuario con paginación estándar. |
 | GET | `/companies/:id` | `companies.read` | Detalle de nombre, razón social, identificación fiscal, contacto, estado y configuración. |
 | POST | `/companies` | `companies.write` | Provisión de una empresa. Body `{name, legalName?, taxId?, phone?, email?, address?, status?, settings?}`. |
-| PATCH | `/companies/:id` | `companies.write` | Actualiza campos permitidos; el body no puede estar vacío. |
+| PATCH | `/companies/:id` | `companies.write` | Actualiza campos permitidos; el body no puede estar vacío. En `email`, enviar una cadena vacía elimina el correo registrado. |
 
 Los nombres duplicados responden `409 NAME_IN_USE`. La configuración es un objeto JSON
 validado por Zod y nunca contiene credenciales ni tokens.
@@ -163,7 +163,7 @@ Todas las operaciones están aisladas por el `companyId` del usuario autenticado
 | GET | `/branches` | `branches.read` | Listado paginado con filtros `search` y `status`. |
 | GET | `/branches/:id` | `branches.read` | Detalle; otra empresa responde `404`. |
 | POST | `/branches` | `branches.write` | Crea sucursal con `code`, `name`, contacto, responsable y estado. |
-| PATCH | `/branches/:id` | `branches.write` | Edita campos permitidos; `code` es único por empresa. |
+| PATCH | `/branches/:id` | `branches.write` | Edita campos permitidos; `code` es único por empresa. En `email`, enviar una cadena vacía elimina el correo registrado. |
 
 ## M13 — Compras
 

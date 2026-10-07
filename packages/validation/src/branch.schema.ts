@@ -2,12 +2,16 @@ import { z } from 'zod';
 import { idParamsSchema, paginationSchema } from './common.schema.js';
 
 const optionalText = (max: number) => z.string().trim().max(max).optional();
+const optionalEmail = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().trim().email('El correo no es válido').max(254).optional(),
+);
 const branchFieldsSchema = z.object({
   code: z.string().trim().min(1).max(40),
   name: z.string().trim().min(1).max(120),
   address: optionalText(300),
   phone: optionalText(50),
-  email: z.string().trim().email('El correo no es válido').max(254).optional(),
+  email: optionalEmail,
   manager: optionalText(160),
   isActive: z.boolean(),
 });
