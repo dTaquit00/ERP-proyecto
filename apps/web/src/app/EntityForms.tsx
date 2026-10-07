@@ -106,12 +106,15 @@ export function EntityFormPage() {
   const [warehouseStockError, setWarehouseStockError] = useState('');
   const [warehouseStockLoading, setWarehouseStockLoading] = useState(false);
   const canReadInventory = can('inventory.read');
+  const canReadRoles = can('roles.read');
   const [entityLoaded, setEntityLoaded] = useState(!id);
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const writePermission = kind === 'companies' ? 'companies.write' : `${kind}.write`;
   const readPermission = kind === 'companies' ? 'companies.read' : `${kind}.read`;
+  const canWrite = can(writePermission);
+  const supportsReadOnlyDetail = ['customers', 'suppliers', 'warehouses', 'branches', 'companies', 'users', 'roles'].includes(kind);
   const title = labels[kind] ?? 'registro';
   const isSystemRole = values.isSystem === true;
   const roleFields = useMemo(() => Array.isArray(values.permissions) ? values.permissions.map(String) : [], [values.permissions]);
@@ -123,7 +126,7 @@ export function EntityFormPage() {
     setError('');
     setUserHistoryError(''); setRelatedHistoryError(''); setWarehouseStockError('');
     if (!isKnown) return () => { active = false; };
-    if (kind === 'roles') {
+    if (kind === 'roles' && canWrite) {
       setPermissionCatalogLoading(true);
       apiRequest<{ permissions: string[] }>('/permissions')
         .then((result) => { if (active) setPermissionCatalog(result.permissions ?? []); })
@@ -131,7 +134,7 @@ export function EntityFormPage() {
         .finally(() => { if (active) setPermissionCatalogLoading(false); });
     }
     if (kind === 'warehouses') apiRequest<{ items: Row[] }>('/branches?limit=100&status=active').then((result) => { if (active) setBranches(result.items ?? []); }).catch(() => undefined);
-    if (kind === 'users') apiRequest<{ items: Row[] }>('/roles?limit=100').then((result) => { if (active) setRoles(result.items ?? []); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar los roles'); });
+    if (kind === 'users' && canReadRoles) apiRequest<{ items: Row[] }>('/roles?limit=100').then((result) => { if (active) setRoles(result.items ?? []); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar los roles'); });
     if (kind === 'users' && id) apiRequest<Row>(`/users/${id}/history`).then((result) => { if (active) setUserHistory(result); }).catch((reason) => { if (active) setUserHistoryError(reason instanceof Error ? reason.message : 'No se pudo cargar el historial de acceso'); });
     if (kind === 'customers' && id) { setRelatedHistoryLoading(true); apiRequest<{ items: Row[] }>(`/sales?customerId=${encodeURIComponent(id)}&limit=100`).then((result) => { if (active) setRelatedHistory(result.items ?? []); }).catch((reason) => { if (active) setRelatedHistoryError(reason instanceof Error ? reason.message : 'No se pudo cargar el historial de ventas'); }).finally(() => { if (active) setRelatedHistoryLoading(false); }); }
     if (kind === 'suppliers' && id) { setRelatedHistoryLoading(true); apiRequest<{ items: Row[] }>(`/purchases?supplierId=${encodeURIComponent(id)}&limit=100`).then((result) => { if (active) setRelatedHistory(result.items ?? []); }).catch((reason) => { if (active) setRelatedHistoryError(reason instanceof Error ? reason.message : 'No se pudo cargar el historial de compras'); }).finally(() => { if (active) setRelatedHistoryLoading(false); }); }
@@ -143,7 +146,7 @@ export function EntityFormPage() {
         .finally(() => { if (active) setLoading(false); });
     }
     return () => { active = false; };
-  }, [id, kind, isKnown, title, canReadInventory]);
+  }, [id, kind, isKnown, title, canReadInventory, canReadRoles, canWrite]);
 
   function update(key: string, value: unknown) {
     setValues((current) => {
@@ -154,7 +157,7 @@ export function EntityFormPage() {
   }
 
   async function submit(event: React.FormEvent) {
-    event.preventDefault(); setSaving(true); setError('');
+    event.preventDefault(); if (!canWrite) return; setSaving(true); setError('');
     if (kind === 'roles' && (!permissionCatalog.length || permissionCatalogLoading)) {
       setSaving(false); setError('No se pudo cargar el catálogo de permisos. Vuelve a abrir el formulario antes de guardar.'); return;
     }
@@ -217,7 +220,7 @@ export function EntityFormPage() {
 
   if (!isKnown) return <div className="panel"><h2>Módulo no disponible</h2><p className="muted">No existe un formulario para este recurso.</p></div>;
   if (kind === 'companies' && !id) return <div className="panel"><h2>Alta de empresas no disponible</h2><p className="muted">El registro de nuevas empresas está reservado a la administración de plataforma. Desde aquí puedes consultar y editar la empresa de tu sesión.</p><Link className="secondary-button" to="/companies">Volver a Empresa</Link></div>;
-  if (!can(readPermission) || !can(writePermission)) return <div className="error">Tu rol no tiene permiso para {id ? 'editar' : 'crear'} {title === 'almacén' ? 'el almacén' : `el ${title}`}.</div>;
+  if (!can(readPermission) || (!canWrite && (!id || !supportsReadOnlyDetail))) return <div className="error">Tu rol no tiene permiso para {id ? 'consultar' : 'crear'} {title === 'almacén' ? 'el almacén' : `el ${title}`}.</div>;
   if (loading) return <div className="panel"><p className="muted">Cargando {title}…</p></div>;
   if (id && !entityLoaded) return <div className="panel"><h2>No se pudo abrir este {title}</h2><p className="error">{error || `No se pudo cargar el ${title}.`}</p><Link className="secondary-button" to={`/${kind}`}>Volver al listado</Link></div>;
 
@@ -228,26 +231,27 @@ export function EntityFormPage() {
 
   return <div className="panel entity-form-panel">
     <p className="eyebrow">{kind.toUpperCase()}</p>
-    <h2>{id ? `Editar ${title}` : `Nuevo ${title}`}</h2>
-    <p className="muted">Los cambios se guardan en la empresa de tu sesión.</p>
+    <h2>{id ? `${canWrite ? 'Editar' : 'Consultar'} ${title}` : `Nuevo ${title}`}</h2>
+    <p className="muted">{canWrite ? 'Los cambios se guardan en la empresa de tu sesión.' : 'Vista de consulta. Tu rol no puede modificar este registro.'}</p>
     {error && <p className="error">{error}</p>}
     <form className="product-form entity-form" onSubmit={(event) => void submit(event)}>
       {fields.map((field) => <label key={field.key}>{field.label}
-        {field.key === 'roleId' ? <select required value={String(values.roleId ?? '')} onChange={(event) => update(field.key, event.target.value)}><option value="">Selecciona un rol</option>{roles.map((role) => <option key={String(role.id)} value={String(role.id)}>{String(role.displayName ?? role.name)}</option>)}</select>
-          : field.key === 'branchId' ? <select value={String(values.branchId ?? '')} onChange={(event) => update(field.key, event.target.value)}><option value="">Sin sucursal</option>{branches.map((branch) => <option key={String(branch.id)} value={String(branch.id)}>{String(branch.name)}</option>)}</select>
-            : field.type === 'select' ? <select required={field.required} value={String(values[field.key] ?? '')} onChange={(event) => update(field.key, event.target.value)}>{(field.options ?? []).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
-            : field.type === 'textarea' ? <textarea maxLength={1000} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />
-              : <input type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'} minLength={field.key === 'password' ? 12 : undefined} maxLength={field.key === 'password' ? 128 : 254} required={field.required} disabled={Boolean(kind === 'roles' && id && field.key === 'name')} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />}
+        {field.key === 'roleId' && !canReadRoles ? <input value={String(values.roleName ?? values.roleId ?? 'Sin rol')} disabled />
+          : field.key === 'roleId' ? <select required value={String(values.roleId ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}><option value="">Selecciona un rol</option>{roles.map((role) => <option key={String(role.id)} value={String(role.id)}>{String(role.displayName ?? role.name)}</option>)}</select>
+          : field.key === 'branchId' ? <select value={String(values.branchId ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}><option value="">Sin sucursal</option>{branches.map((branch) => <option key={String(branch.id)} value={String(branch.id)}>{String(branch.name)}</option>)}</select>
+            : field.type === 'select' ? <select required={field.required} value={String(values[field.key] ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}>{(field.options ?? []).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+            : field.type === 'textarea' ? <textarea maxLength={1000} value={readValue(values, field.key)} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)} />
+              : <input type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'} minLength={field.key === 'password' ? 12 : undefined} maxLength={field.key === 'password' ? 128 : 254} required={field.required} disabled={!canWrite || Boolean(kind === 'roles' && id && field.key === 'name')} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />}
       </label>)}
-      {kind === 'roles' && <fieldset className="permission-grid"><legend>Permisos del rol</legend>{permissionCatalogLoading ? <p className="muted">Cargando permisos disponibles…</p> : permissionCatalog.length ? groupPermissions(permissionCatalog).sort((a, b) => permissionGroupOrder.indexOf(a.title) - permissionGroupOrder.indexOf(b.title)).map((group) => <section key={group.title}><h3>{group.title}</h3>{group.values.map((permission) => <label className="checkbox-label" key={permission}><input type="checkbox" checked={roleFields.includes(permission)} onChange={(event) => update('permissions', event.target.checked ? [...roleFields, permission] : roleFields.filter((value) => value !== permission))} />{permission}</label>)}</section>) : <p className="error">El catálogo de permisos no está disponible; no guardes cambios hasta poder cargarlo.</p>}</fieldset>}
+      {kind === 'roles' && <fieldset className="permission-grid"><legend>Permisos del rol</legend>{!canWrite ? roleFields.length ? <ul>{roleFields.map((permission) => <li key={permission}>{permission}</li>)}</ul> : <p className="muted">Este rol no tiene permisos asignados.</p> : permissionCatalogLoading ? <p className="muted">Cargando permisos disponibles…</p> : permissionCatalog.length ? groupPermissions(permissionCatalog).sort((a, b) => permissionGroupOrder.indexOf(a.title) - permissionGroupOrder.indexOf(b.title)).map((group) => <section key={group.title}><h3>{group.title}</h3>{group.values.map((permission) => <label className="checkbox-label" key={permission}><input type="checkbox" checked={roleFields.includes(permission)} onChange={(event) => update('permissions', event.target.checked ? [...roleFields, permission] : roleFields.filter((value) => value !== permission))} />{permission}</label>)}</section>) : <p className="error">El catálogo de permisos no está disponible; no guardes cambios hasta poder cargarlo.</p>}</fieldset>}
       {kind === 'users' && id && <section className="user-history"><h3>Historial de acceso</h3>{userHistoryError ? <p className="error">{userHistoryError}</p> : userHistory ? <><p>Cuenta creada: {userHistory.createdAt ? new Date(String(userHistory.createdAt)).toLocaleString('es-MX') : '—'}</p><p>Último inicio de sesión: {userHistory.lastLoginAt ? new Date(String(userHistory.lastLoginAt)).toLocaleString('es-MX') : 'Sin registros'}</p><p>Contraseña cambiada: {userHistory.passwordChangedAt ? new Date(String(userHistory.passwordChangedAt)).toLocaleString('es-MX') : '—'}</p><h4>Sesiones</h4>{((userHistory.sessions as Row[]) ?? []).length ? <ul>{((userHistory.sessions as Row[]) ?? []).map((session, index) => <li key={String(session.id ?? index)}>{session.active ? 'Activa' : session.revokedAt ? 'Revocada' : 'Expirada'} · último uso {session.lastUsedAt ? new Date(String(session.lastUsedAt)).toLocaleString('es-MX') : '—'} · vence {session.expiresAt ? new Date(String(session.expiresAt)).toLocaleString('es-MX') : '—'}</li>)}</ul> : <p className="muted">No hay sesiones para mostrar.</p>}{can('users.write') && ((userHistory.sessions as Row[]) ?? []).some((session) => session.active) && <button type="button" disabled={saving} onClick={() => void revokeUserSessions()}>{saving ? 'Cerrando sesiones…' : 'Cerrar todas las sesiones activas'}</button>}</> : <p className="muted">Cargando historial de acceso…</p>}</section>}
       {id && ['customers', 'suppliers'].includes(kind) && <section className="user-history"><h3>{kind === 'customers' ? 'Historial de ventas del cliente' : 'Historial de compras al proveedor'}</h3>{relatedHistoryError ? <p className="error">{relatedHistoryError}</p> : relatedHistoryLoading ? <p className="muted">Cargando historial…</p> : relatedHistory.length ? <ul>{relatedHistory.map((entry) => <li key={String(entry.id)}>{entry.saleDate || entry.purchaseDate ? new Date(String(entry.saleDate ?? entry.purchaseDate)).toLocaleDateString('es-MX') : 'Fecha desconocida'} · {String(entry.status)} · {Number(entry.total ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</li>)}</ul> : <p className="muted">No hay operaciones registradas para esta ficha.</p>}</section>}
       {kind === 'warehouses' && id && canReadInventory && <section className="user-history"><h3>Existencias en este almacén</h3>{warehouseStockError ? <p className="error">{warehouseStockError}</p> : warehouseStockLoading ? <p className="muted">Cargando existencias…</p> : warehouseStock.length ? <div className="table-panel"><table><thead><tr><th>Producto</th><th>Existencia</th><th>Mínimo</th><th>Estado</th></tr></thead><tbody>{warehouseStock.map((stock, index) => { const quantity = Number(stock.quantity ?? 0); const availability = quantity <= 0 ? 'Agotado' : stock.lowStock === true ? 'Stock bajo' : 'Disponible'; return <tr key={String(stock.id ?? index)}><td>{String(stock.productName ?? stock.productSku ?? '—')}</td><td>{String(quantity)}</td><td>{String(stock.minStock ?? 0)}</td><td>{availability}</td></tr>; })}</tbody></table></div> : <p className="muted">Este almacén todavía no tiene existencias.</p>}</section>}
-      {kind === 'branches' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} onChange={(event) => update('isActive', event.target.checked)} />Sucursal activa</label>}
-      {kind === 'warehouses' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} onChange={(event) => update('isActive', event.target.checked)} />Almacén activo</label>}
-      {kind === 'customers' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} onChange={(event) => update('isActive', event.target.checked)} />Cliente activo</label>}
-      {kind === 'suppliers' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} onChange={(event) => update('isActive', event.target.checked)} />Proveedor activo</label>}
-      <div className="form-actions"><Link className="secondary-button" to={`/${kind}`}>Volver</Link>{kind === 'users' && id && <button type="button" disabled={saving} onClick={() => void toggleUser()}>{values.isActive === false ? 'Activar usuario' : 'Desactivar usuario'}</button>}{kind === 'roles' && isSystemRole && <span className="muted">No puedes eliminar un rol del sistema.</span>}{kind === 'roles' && id && !isSystemRole && <button type="button" disabled={saving || Number(values.userCount) > 0} onClick={() => void deleteRole()} title={Number(values.userCount) > 0 ? 'No se puede eliminar un rol asignado' : undefined}>Eliminar rol</button>}<button className="primary" disabled={saving || (kind === 'roles' && (permissionCatalogLoading || !permissionCatalog.length))}>{saving ? 'Guardando…' : 'Guardar cambios'}</button></div>
+      {kind === 'branches' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} disabled={!canWrite} onChange={(event) => update('isActive', event.target.checked)} />Sucursal activa</label>}
+      {kind === 'warehouses' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} disabled={!canWrite} onChange={(event) => update('isActive', event.target.checked)} />Almacén activo</label>}
+      {kind === 'customers' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} disabled={!canWrite} onChange={(event) => update('isActive', event.target.checked)} />Cliente activo</label>}
+      {kind === 'suppliers' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} disabled={!canWrite} onChange={(event) => update('isActive', event.target.checked)} />Proveedor activo</label>}
+      <div className="form-actions"><Link className="secondary-button" to={`/${kind}`}>Volver</Link>{canWrite && kind === 'users' && id && <button type="button" disabled={saving} onClick={() => void toggleUser()}>{values.isActive === false ? 'Activar usuario' : 'Desactivar usuario'}</button>}{canWrite && kind === 'roles' && isSystemRole && <span className="muted">No puedes eliminar un rol del sistema.</span>}{canWrite && kind === 'roles' && id && !isSystemRole && <button type="button" disabled={saving || Number(values.userCount) > 0} onClick={() => void deleteRole()} title={Number(values.userCount) > 0 ? 'No se puede eliminar un rol asignado' : undefined}>Eliminar rol</button>}{canWrite ? <button className="primary" disabled={saving || (kind === 'roles' && (permissionCatalogLoading || !permissionCatalog.length))}>{saving ? 'Guardando…' : 'Guardar cambios'}</button> : <span className="muted">Modo de consulta</span>}</div>
     </form>
   </div>;
 }
