@@ -62,18 +62,28 @@ function Shell() {
   if (!user) return <Navigate to="/login" replace />;
 
   const operationLinks = [
-    ['/dashboard', 'Dashboard', can('dashboard.read')], ['/products', 'Productos', can('products.read')],
-    ['/categories', 'Categorías', can('categories.read')], ['/customers', 'Clientes', can('customers.read')],
-    ['/suppliers', 'Proveedores', can('suppliers.read')], ['/warehouses', 'Almacenes', can('warehouses.read')],
-    ['/companies', 'Empresa', can('companies.read')], ['/branches', 'Sucursales', can('branches.read')], ['/inventory', 'Inventario', can('inventory.read')],
-    ['/sales', 'Ventas', can('sales.read')], ['/purchases', 'Compras', can('purchases.read')],
+    ['/dashboard', 'Dashboard', can('dashboard.read')],
+    ['/products', 'Productos', can('products.read'), can('products.write') && can('categories.read') ? '/products/new' : undefined],
+    ['/categories', 'Categorías', can('categories.read'), can('categories.write') ? '/categories/new' : undefined],
+    ['/customers', 'Clientes', can('customers.read'), can('customers.write') ? '/customers/new' : undefined],
+    ['/suppliers', 'Proveedores', can('suppliers.read'), can('suppliers.write') ? '/suppliers/new' : undefined],
+    ['/warehouses', 'Almacenes', can('warehouses.read'), can('warehouses.write') ? '/warehouses/new' : undefined],
+    ['/companies', 'Empresa', can('companies.read')],
+    ['/branches', 'Sucursales', can('branches.read'), can('branches.write') ? '/branches/new' : undefined],
+    ['/inventory', 'Inventario', can('inventory.read'), can('inventory.write') && can('products.read') && can('warehouses.read') ? '/inventory/movements/new' : undefined],
+    ['/sales', 'Ventas', can('sales.read'), can('sales.write') && can('customers.read') && can('warehouses.read') && can('products.read') ? '/sales/new' : undefined],
+    ['/purchases', 'Compras', can('purchases.read'), can('purchases.write') && can('suppliers.read') && can('warehouses.read') && can('products.read') ? '/purchases/new' : undefined],
     ['/reports', 'Reportes', can('reports.read') || can('reports.export')],
   ] as const;
   const adminLinks = [
-    ['/users', 'Usuarios', can('users.read')], ['/roles', 'Roles', can('roles.read')], ['/audit', 'Auditoría', can('audit.read')],
+    ['/users', 'Usuarios', can('users.read'), can('users.write') && can('roles.read') ? '/users/new' : undefined],
+    ['/roles', 'Roles', can('roles.read'), can('roles.write') && can('roles.read') ? '/roles/new' : undefined],
+    ['/audit', 'Auditoría', can('audit.read')],
   ] as const;
-  const renderLinks = (links: readonly (readonly [string, string, boolean])[]) => links.filter((link) => link[2]).map(([path, label]) =>
-    <Link className={location.pathname === path || (path !== '/dashboard' && location.pathname.startsWith(path)) ? 'active' : ''} to={path} key={path}>{label}</Link>);
+  const renderLinks = (links: readonly (readonly [string, string, boolean, string?])[]) => links.filter((link) => link[2] || link[3]).map(([path, label, canRead, createPath]) => {
+    const target = canRead ? path : createPath ?? path;
+    return <Link className={location.pathname === path || (path !== '/dashboard' && location.pathname.startsWith(path)) ? 'active' : ''} to={target} key={path}>{canRead ? label : `Nuevo ${label.toLowerCase()}`}</Link>;
+  });
 
   return <div className="app-shell">
     <aside className="sidebar">
@@ -81,7 +91,7 @@ function Shell() {
       <div className="workspace-label"><span className="workspace-dot" /> ESPACIO DE TRABAJO</div>
       <nav aria-label="Navegación principal">
         <p className="nav-caption">OPERACIÓN</p>{renderLinks(operationLinks)}
-        {adminLinks.some((link) => link[2]) && <><p className="nav-caption">ADMINISTRACIÓN</p>{renderLinks(adminLinks)}</>}
+        {adminLinks.some((link) => link[2] || link[3]) && <><p className="nav-caption">ADMINISTRACIÓN</p>{renderLinks(adminLinks)}</>}
       </nav>
       <div className="sidebar-account"><div className="account-avatar">{user.firstName.slice(0, 1)}{user.lastName.slice(0, 1)}</div><div className="account-copy"><strong>{user.firstName} {user.lastName}</strong><span>{user.email}</span></div><button className="logout-button" onClick={() => void logout()} aria-label="Cerrar sesión" title="Cerrar sesión">↗</button></div>
     </aside>
