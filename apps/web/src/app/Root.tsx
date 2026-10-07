@@ -139,7 +139,7 @@ function ResourcePage({ resource }: { resource: string }) {
   return <>
     <div className="section-heading"><div><p className="eyebrow">MÓDULO</p><h2>{config.label}</h2><p className="muted">{String(data?.meta?.total ?? items.length)} registros disponibles.</p></div><div className="module-actions">{resource === 'products' && can('products.write') && <Link className="primary link-button" to="/products/new">Nuevo producto</Link>}{resource === 'categories' && can('categories.write') && <Link className="primary link-button" to="/categories/new">Nueva categoría</Link>}{!['products', 'categories', 'inventory', 'audit', 'companies'].includes(resource) && can(`${resource}.write`) && <Link className="primary link-button" to={`/${resource}/new`}>Nuevo registro</Link>}{resource === 'inventory' && <>{can('inventory.write') && <Link className="primary link-button" to="/inventory/movements/new">Registrar movimiento</Link>}<Link className="secondary-button" to="/inventory/movements">Ver movimientos</Link></>}</div></div>
     {config.searchable && <form className="search-bar" onSubmit={applySearch}><input aria-label={`Buscar ${config.label.toLowerCase()}`} placeholder="Buscar…" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} /><button type="submit">Buscar</button></form>}
-    {resource === 'inventory' ? <InventoryStockTable items={items} loading={loading} error={error} /> : loading ? <Loading /> : error ? <ErrorState message={error} /> : <div className="panel table-panel">{items.length === 0 ? <p className="muted">No hay registros para mostrar.</p> : <table><thead><tr><th>{resource === 'users' ? 'Usuario' : resource === 'audit' ? 'Acción' : resource === 'branches' ? 'Sucursal / código' : 'Nombre / código'}</th><th>Estado</th><th>{resource === 'users' ? 'Rol' : 'Identificador'}</th></tr></thead><tbody>{items.map((item, index) => { const label = String(item.name ?? item.displayName ?? item.email ?? item.code ?? item.sku ?? item.productName ?? item.customerName ?? item.supplierName ?? item.action ?? '-'); const editable = can(`${resource}.write`) && resource !== 'audit'; const readOnlyDetail = ['customers', 'suppliers', 'warehouses', 'branches', 'companies', 'users', 'roles'].includes(resource) && can(config.permission); return <tr key={String(item.id ?? index)}><td>{editable || readOnlyDetail ? <Link to={`/${resource}/${String(item.id)}`}>{label}</Link> : label}</td><td>{String(item.status ?? (item.isActive === false ? 'Inactivo' : item.isActive === true ? 'Activo' : item.roleName ?? '-'))}</td><td>{resource === 'users' ? String(item.roleName ?? '-') : String(item.id ?? '-')}</td></tr>; })}</tbody></table>}</div>}
+    {resource === 'inventory' ? <InventoryStockTable items={items} loading={loading} error={error} /> : loading ? <Loading /> : error ? <ErrorState message={error} /> : <div className="panel table-panel">{items.length === 0 ? <p className="muted">No hay registros para mostrar.</p> : <table><thead><tr><th>{resource === 'users' ? 'Usuario' : resource === 'audit' ? 'Acción' : resource === 'branches' ? 'Sucursal / código' : 'Nombre / código'}</th><th>Estado</th><th>{resource === 'users' ? 'Rol' : 'Identificador'}</th></tr></thead><tbody>{items.map((item, index) => { const label = String(item.name ?? item.displayName ?? item.email ?? item.code ?? item.sku ?? item.productName ?? item.customerName ?? item.supplierName ?? item.action ?? '-'); const editable = can(`${resource}.write`) && resource !== 'audit'; const readOnlyDetail = ['customers', 'suppliers', 'warehouses', 'branches', 'companies', 'users', 'roles', 'products', 'categories'].includes(resource) && can(config.permission); return <tr key={String(item.id ?? index)}><td>{editable || readOnlyDetail ? <Link to={`/${resource}/${String(item.id)}`}>{label}</Link> : label}</td><td>{String(item.status ?? (item.isActive === false ? 'Inactivo' : item.isActive === true ? 'Activo' : item.roleName ?? '-'))}</td><td>{resource === 'users' ? String(item.roleName ?? '-') : String(item.id ?? '-')}</td></tr>; })}</tbody></table>}</div>}
     <div className="pagination"><button type="button" disabled={loading || page <= 1} onClick={() => setPage((current) => current - 1)}>Anterior</button><span>Página {page} de {totalPages}</span><button type="button" disabled={loading || page >= totalPages} onClick={() => setPage((current) => current + 1)}>Siguiente</button></div>
   </>;
 }
@@ -225,6 +225,9 @@ function ProductFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { can } = useAuth();
+  const canRead = can('products.read');
+  const canWrite = can('products.write');
+  const canReadCategories = can('categories.read');
   const [form, setForm] = useState<ProductDraft>(EMPTY_PRODUCT);
   const [categories, setCategories] = useState<Row[]>([]);
   const [entityLoaded, setEntityLoaded] = useState(!id);
@@ -237,10 +240,11 @@ function ProductFormPage() {
     setEntityLoaded(!id);
     setLoading(Boolean(id));
     setError('');
-    apiRequest<{ items: Row[] }>('/categories?limit=100')
+    if (!id && !canWrite || id && !canRead) return () => { active = false; };
+    if (canWrite && canReadCategories) apiRequest<{ items: Row[] }>('/categories?limit=100')
       .then((result) => { if (active) setCategories(result.items ?? []); })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar las categorías'); });
-    if (id) {
+    if (id && canRead) {
       apiRequest<Row>(`/products/${id}`)
         .then((product) => {
           if (!active) return;
@@ -258,7 +262,7 @@ function ProductFormPage() {
         .finally(() => { if (active) setLoading(false); });
     }
     return () => { active = false; };
-  }, [id]);
+  }, [id, canRead, canWrite, canReadCategories]);
 
   function update<K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -266,6 +270,7 @@ function ProductFormPage() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (!canWrite) return;
     setSaving(true);
     setError('');
     const body = {
@@ -293,29 +298,30 @@ function ProductFormPage() {
     }
   }
 
-  if (!can('products.write')) return <ErrorState message="No tienes permiso para editar productos." />;
+  if (id ? !canRead : !canWrite) return <ErrorState message={id ? 'No tienes permiso para consultar productos.' : 'No tienes permiso para crear productos.'} />;
   if (loading) return <Loading />;
   if (id && !entityLoaded) return <div className="panel"><h2>No se pudo abrir este producto</h2><p className="error">{error || 'No se pudo cargar el producto.'}</p><Link className="secondary-button" to="/products">Volver al listado</Link></div>;
   const field = (label: string, key: 'code' | 'sku' | 'name' | 'purchasePrice' | 'salePrice' | 'unit' | 'barcode' | 'image', props: Record<string, string> = {}) => (
-    <label>{label}<input {...props} value={form[key]} onChange={(event) => update(key, event.target.value)} /></label>
+    <label>{label}<input {...props} disabled={!canWrite} value={form[key]} onChange={(event) => update(key, event.target.value)} /></label>
   );
   return <div className="panel">
-    <p className="eyebrow">CATÁLOGO</p><h2>{id ? 'Editar producto' : 'Nuevo producto'}</h2>
+    <p className="eyebrow">CATÁLOGO</p><h2>{id ? canWrite ? 'Editar producto' : 'Consultar producto' : 'Nuevo producto'}</h2>{!canWrite && <p className="muted">Vista de consulta. Tu rol no puede modificar este producto.</p>}
     {error && <ErrorState message={error} />}
+    {!id && canWrite && !canReadCategories && <p className="error">Tu rol necesita permiso para consultar categorías antes de crear un producto.</p>}
     <form className="product-form" onSubmit={(event) => void submit(event)}>
       {field('Nombre', 'name', { required: 'true', minLength: '2', maxLength: '120' })}
       {field('SKU', 'sku', { required: 'true', maxLength: '40' })}
-      <label>Categoría<select required value={form.categoryId} onChange={(event) => update('categoryId', event.target.value)}><option value="">Selecciona una categoría</option>{categories.map((category) => <option key={String(category.id)} value={String(category.id)}>{String(category.name)}</option>)}</select></label>
+      <label>Categoría{canReadCategories ? <select required value={form.categoryId} disabled={!canWrite} onChange={(event) => update('categoryId', event.target.value)}><option value="">Selecciona una categoría</option>{categories.map((category) => <option key={String(category.id)} value={String(category.id)}>{String(category.name)}</option>)}</select> : <input value={form.categoryId || '—'} disabled />}</label>
       {field('Precio de compra', 'purchasePrice', { type: 'number', min: '0', step: '0.01', required: 'true' })}
       {field('Precio de venta', 'salePrice', { type: 'number', min: '0', step: '0.01', required: 'true' })}
       {field('Unidad', 'unit', { required: 'true', maxLength: '20' })}
       {field('Código interno', 'code', { maxLength: '60' })}
       {field('Código de barras', 'barcode', { maxLength: '60' })}
       {field('URL de imagen', 'image', { type: 'url', maxLength: '500' })}
-      <label>Descripción<textarea value={form.description} maxLength={1000} onChange={(event) => update('description', event.target.value)} /></label>
-      <section className="sale-lines"><div className="panel-title"><h3>Impuestos del producto</h3><button type="button" onClick={() => update('taxes', [...form.taxes, { name: '', rate: 0 }])}>+ Agregar impuesto</button></div>{!form.taxes.length && <small className="muted">Este producto no tiene impuestos adicionales.</small>}{form.taxes.map((tax, index) => <div className="sale-line tax-line" key={index}><label>Nombre<input required maxLength={60} value={tax.name} onChange={(event) => update('taxes', form.taxes.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} /></label><label>Tasa (%)<input type="number" required min="0" max="100" step="0.01" value={tax.rate} onChange={(event) => update('taxes', form.taxes.map((item, itemIndex) => itemIndex === index ? { ...item, rate: Number(event.target.value) } : item))} /></label><button type="button" onClick={() => update('taxes', form.taxes.filter((_, itemIndex) => itemIndex !== index))}>Quitar</button></div>)}</section>
-      <label className="checkbox-label"><input type="checkbox" checked={form.isActive} onChange={(event) => update('isActive', event.target.checked)} />Producto activo</label>
-      <div className="form-actions"><button type="button" onClick={() => navigate('/products')}>Cancelar</button><button className="primary" disabled={saving || categories.length === 0}>{saving ? 'Guardando…' : 'Guardar producto'}</button></div>
+      <label>Descripción<textarea disabled={!canWrite} value={form.description} maxLength={1000} onChange={(event) => update('description', event.target.value)} /></label>
+      <section className="sale-lines"><div className="panel-title"><h3>Impuestos del producto</h3>{canWrite && <button type="button" onClick={() => update('taxes', [...form.taxes, { name: '', rate: 0 }])}>+ Agregar impuesto</button>}</div>{!form.taxes.length && <small className="muted">Este producto no tiene impuestos adicionales.</small>}{form.taxes.map((tax, index) => <div className="sale-line tax-line" key={index}><label>Nombre<input disabled={!canWrite} required maxLength={60} value={tax.name} onChange={(event) => update('taxes', form.taxes.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} /></label><label>Tasa (%)<input disabled={!canWrite} type="number" required min="0" max="100" step="0.01" value={tax.rate} onChange={(event) => update('taxes', form.taxes.map((item, itemIndex) => itemIndex === index ? { ...item, rate: Number(event.target.value) } : item))} /></label>{canWrite && <button type="button" onClick={() => update('taxes', form.taxes.filter((_, itemIndex) => itemIndex !== index))}>Quitar</button>}</div>)}</section>
+      <label className="checkbox-label"><input type="checkbox" checked={form.isActive} disabled={!canWrite} onChange={(event) => update('isActive', event.target.checked)} />Producto activo</label>
+      <div className="form-actions"><button type="button" onClick={() => navigate('/products')}>Volver</button>{canWrite ? <button className="primary" disabled={saving || !canReadCategories || categories.length === 0}>{saving ? 'Guardando…' : 'Guardar producto'}</button> : <span className="muted">Modo de consulta</span>}</div>
     </form>
   </div>;
 }
@@ -324,6 +330,8 @@ function CategoryFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { can } = useAuth();
+  const canRead = can('categories.read');
+  const canWrite = can('categories.write');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -333,7 +341,7 @@ function CategoryFormPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !canRead) return;
     let active = true;
     setEntityLoaded(false);
     setLoading(true);
@@ -349,10 +357,11 @@ function CategoryFormPage() {
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudo cargar la categoría'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [id]);
+  }, [id, canRead]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (!canWrite) return;
     setSaving(true);
     setError('');
     try {
@@ -366,10 +375,10 @@ function CategoryFormPage() {
     }
   }
 
-  if (!can('categories.write')) return <ErrorState message="No tienes permiso para editar categorías." />;
+  if (id ? !canRead : !canWrite) return <ErrorState message={id ? 'No tienes permiso para consultar categorías.' : 'No tienes permiso para crear categorías.'} />;
   if (loading) return <Loading />;
   if (id && !entityLoaded) return <div className="panel"><h2>No se pudo abrir esta categoría</h2><p className="error">{error || 'No se pudo cargar la categoría.'}</p><Link className="secondary-button" to="/categories">Volver al listado</Link></div>;
-  return <div className="panel"><p className="eyebrow">CATÁLOGO</p><h2>{id ? 'Editar categoría' : 'Nueva categoría'}</h2>{error && <ErrorState message={error} />}<form className="product-form" onSubmit={(event) => void submit(event)}><label>Nombre<input value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={80} required /></label><label>Descripción<textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={500} /></label>{id && <label className="checkbox-label"><input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />Categoría activa</label>}<div className="form-actions"><button type="button" onClick={() => navigate('/categories')}>Cancelar</button><button className="primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar categoría'}</button></div></form></div>;
+  return <div className="panel"><p className="eyebrow">CATÁLOGO</p><h2>{id ? canWrite ? 'Editar categoría' : 'Consultar categoría' : 'Nueva categoría'}</h2>{!canWrite && <p className="muted">Vista de consulta. Tu rol no puede modificar esta categoría.</p>}{error && <ErrorState message={error} />}<form className="product-form" onSubmit={(event) => void submit(event)}><label>Nombre<input disabled={!canWrite} value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={80} required /></label><label>Descripción<textarea disabled={!canWrite} value={description} onChange={(event) => setDescription(event.target.value)} maxLength={500} /></label>{id && <label className="checkbox-label"><input type="checkbox" checked={isActive} disabled={!canWrite} onChange={(event) => setIsActive(event.target.checked)} />Categoría activa</label>}<div className="form-actions"><button type="button" onClick={() => navigate('/categories')}>Volver</button>{canWrite ? <button className="primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar categoría'}</button> : <span className="muted">Modo de consulta</span>}</div></form></div>;
 }
 
 function SaleCreatePage() {
