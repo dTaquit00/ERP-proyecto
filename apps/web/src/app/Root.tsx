@@ -211,12 +211,16 @@ function ProductFormPage() {
   const { can } = useAuth();
   const [form, setForm] = useState<ProductDraft>(EMPTY_PRODUCT);
   const [categories, setCategories] = useState<Row[]>([]);
+  const [entityLoaded, setEntityLoaded] = useState(!id);
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
+    setEntityLoaded(!id);
+    setLoading(Boolean(id));
+    setError('');
     apiRequest<{ items: Row[] }>('/categories?limit=100')
       .then((result) => { if (active) setCategories(result.items ?? []); })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar las categorías'); });
@@ -232,6 +236,7 @@ function ProductFormPage() {
             unit: String(product.unit ?? 'pza'), barcode: String(product.barcode ?? ''), image: String(product.image ?? ''),
             isActive: product.isActive !== false, taxes,
           });
+          setEntityLoaded(true);
         })
         .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudo cargar el producto'); })
         .finally(() => { if (active) setLoading(false); });
@@ -274,6 +279,7 @@ function ProductFormPage() {
 
   if (!can('products.write')) return <ErrorState message="No tienes permiso para editar productos." />;
   if (loading) return <Loading />;
+  if (id && !entityLoaded) return <div className="panel"><h2>No se pudo abrir este producto</h2><p className="error">{error || 'No se pudo cargar el producto.'}</p><Link className="secondary-button" to="/products">Volver al listado</Link></div>;
   const field = (label: string, key: 'code' | 'sku' | 'name' | 'purchasePrice' | 'salePrice' | 'unit' | 'barcode' | 'image', props: Record<string, string> = {}) => (
     <label>{label}<input {...props} value={form[key]} onChange={(event) => update(key, event.target.value)} /></label>
   );
@@ -305,6 +311,7 @@ function CategoryFormPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [entityLoaded, setEntityLoaded] = useState(!id);
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -312,12 +319,16 @@ function CategoryFormPage() {
   useEffect(() => {
     if (!id) return;
     let active = true;
+    setEntityLoaded(false);
+    setLoading(true);
+    setError('');
     apiRequest<Row>(`/categories/${id}`)
       .then((category) => {
         if (!active) return;
         setName(String(category.name ?? ''));
         setDescription(String(category.description ?? ''));
         setIsActive(category.isActive !== false);
+        setEntityLoaded(true);
       })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudo cargar la categoría'); })
       .finally(() => { if (active) setLoading(false); });
@@ -341,6 +352,7 @@ function CategoryFormPage() {
 
   if (!can('categories.write')) return <ErrorState message="No tienes permiso para editar categorías." />;
   if (loading) return <Loading />;
+  if (id && !entityLoaded) return <div className="panel"><h2>No se pudo abrir esta categoría</h2><p className="error">{error || 'No se pudo cargar la categoría.'}</p><Link className="secondary-button" to="/categories">Volver al listado</Link></div>;
   return <div className="panel"><p className="eyebrow">CATÁLOGO</p><h2>{id ? 'Editar categoría' : 'Nueva categoría'}</h2>{error && <ErrorState message={error} />}<form className="product-form" onSubmit={(event) => void submit(event)}><label>Nombre<input value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={80} required /></label><label>Descripción<textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={500} /></label>{id && <label className="checkbox-label"><input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />Categoría activa</label>}<div className="form-actions"><button type="button" onClick={() => navigate('/categories')}>Cancelar</button><button className="primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar categoría'}</button></div></form></div>;
 }
 
