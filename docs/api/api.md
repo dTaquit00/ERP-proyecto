@@ -66,7 +66,7 @@ El cliente debe enviar `credentials: 'include'` (CORS está configurado con `cre
 | POST | `/auth/logout` | cookie | Revoca la sesión (idempotente) y limpia la cookie. |
 | GET | `/auth/me` | Bearer | Usuario autenticado + permisos del rol. |
 | POST | `/auth/change-password` | Bearer | `{currentPassword, newPassword}`. Revoca las demás sesiones. |
-| POST | `/auth/request-password-reset` | no | `{email, companyId?}` → siempre 200. Si el correo corresponde a más de una cuenta activa, se requiere `companyId`; el envío por correo aún debe configurarse en producción. |
+| POST | `/auth/request-password-reset` | no | `{email, companyId?}` → siempre 200 para no revelar si la cuenta existe. Si el correo corresponde a varias cuentas activas, se debe indicar `companyId`. En producción envía el enlace con Resend; configurar `RESEND_API_KEY`, `RESEND_FROM` (dominio verificado) y `WEB_APP_URL`. |
 | POST | `/auth/reset-password` | no | `{token, newPassword}` → un solo uso; revoca todas las sesiones. |
 
 ### Ejemplo — login
