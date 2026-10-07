@@ -5,7 +5,7 @@ export const warehouseNameSchema = z.string().trim().min(2).max(80);
 
 export const createWarehouseSchema = z.object({
   name: warehouseNameSchema,
-  address: z.string().trim().max(200).optional(),
+  address: z.preprocess((value) => value === null ? undefined : value, z.string().trim().max(200).optional()),
   // M05 sucursales: FK validada cuando exista el módulo (Fase 13); hoy opcional.
   branchId: idSchema.optional(),
   isActive: z.boolean().default(true),
@@ -15,7 +15,7 @@ export type CreateWarehouseInput = z.output<typeof createWarehouseSchema>;
 export const updateWarehouseSchema = z
   .object({
     name: warehouseNameSchema.optional(),
-    address: z.string().trim().max(200).optional(),
+    address: z.preprocess((value) => value === null ? undefined : value, z.string().trim().max(200).optional()),
     // `null` desvincula la sucursal.
     branchId: idSchema.nullable().optional(),
     isActive: z.boolean().optional(),
