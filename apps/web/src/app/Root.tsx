@@ -62,7 +62,7 @@ function Shell() {
   if (!user) return <Navigate to="/login" replace />;
 
   const operationLinks = [
-    ['/dashboard', 'Dashboard', true], ['/products', 'Productos', can('products.read')],
+    ['/dashboard', 'Dashboard', can('dashboard.read')], ['/products', 'Productos', can('products.read')],
     ['/categories', 'Categorías', can('categories.read')], ['/customers', 'Clientes', can('customers.read')],
     ['/suppliers', 'Proveedores', can('suppliers.read')], ['/warehouses', 'Almacenes', can('warehouses.read')],
     ['/companies', 'Empresa', can('companies.read')], ['/branches', 'Sucursales', can('branches.read')], ['/inventory', 'Inventario', can('inventory.read')],
@@ -93,6 +93,11 @@ function Shell() {
 }
 
 function DashboardPage() {
+  const { user, can } = useAuth();
+  return can('dashboard.read') ? <DashboardContent /> : <Navigate to={getLandingPath(user?.permissions ?? [])} replace />;
+}
+
+function DashboardContent() {
   const { data, loading, error } = useResource<Row>('/dashboard/summary');
   if (loading) return <Loading />;
   if (error) return <ErrorState message={error} />;
@@ -200,6 +205,17 @@ type ProductDraft = {
   purchasePrice: string; salePrice: string; unit: string; barcode: string; image: string;
   isActive: boolean; taxes: ProductTaxDraft[];
 };
+
+const landingPages: Array<[string, string]> = [
+  ['/dashboard', 'dashboard.read'], ['/products', 'products.read'], ['/sales', 'sales.read'],
+  ['/purchases', 'purchases.read'], ['/inventory', 'inventory.read'], ['/customers', 'customers.read'],
+  ['/suppliers', 'suppliers.read'], ['/warehouses', 'warehouses.read'], ['/categories', 'categories.read'],
+  ['/branches', 'branches.read'], ['/companies', 'companies.read'], ['/reports', 'reports.read'],
+  ['/users', 'users.read'], ['/roles', 'roles.read'], ['/audit', 'audit.read'],
+];
+function getLandingPath(permissions: string[]) {
+  return landingPages.find(([, permission]) => permissions.includes(permission))?.[0] ?? '/change-password';
+}
 const EMPTY_PRODUCT: ProductDraft = {
   code: '', sku: '', name: '', description: '', categoryId: '', purchasePrice: '0',
   salePrice: '0', unit: 'pza', barcode: '', image: '', isActive: true, taxes: [],
