@@ -216,6 +216,7 @@ export function EntityFormPage() {
   }
 
   if (!isKnown) return <div className="panel"><h2>Módulo no disponible</h2><p className="muted">No existe un formulario para este recurso.</p></div>;
+  if (kind === 'companies' && !id) return <div className="panel"><h2>Alta de empresas no disponible</h2><p className="muted">El registro de nuevas empresas está reservado a la administración de plataforma. Desde aquí puedes consultar y editar la empresa de tu sesión.</p><Link className="secondary-button" to="/companies">Volver a Empresa</Link></div>;
   if (!can(readPermission) || !can(writePermission)) return <div className="error">Tu rol no tiene permiso para {id ? 'editar' : 'crear'} {title === 'almacén' ? 'el almacén' : `el ${title}`}.</div>;
   if (loading) return <div className="panel"><p className="muted">Cargando {title}…</p></div>;
   if (id && !entityLoaded) return <div className="panel"><h2>No se pudo abrir este {title}</h2><p className="error">{error || `No se pudo cargar el ${title}.`}</p><Link className="secondary-button" to={`/${kind}`}>Volver al listado</Link></div>;
