@@ -4,7 +4,6 @@ import { AuthProvider, useAuth, useResource } from '../auth/AuthProvider';
 import { apiListAll, apiRequest, downloadReport } from '../services/api';
 import { EntityFormPage } from './EntityForms';
 import { getLandingPath } from './navigation';
-import { PRODUCT_UNITS } from '@erp/validation';
 import '../ui.css';
 import '../theme.css';
 import '../auth.css';
@@ -13,6 +12,9 @@ type Row = Record<string, unknown>;
 const statusFilterResources = new Set(['products', 'categories', 'customers', 'suppliers', 'warehouses', 'branches', 'users']);
 const businessStatusLabels: Record<string, string> = { pending: 'Pendiente', confirmed: 'Confirmada', cancelled: 'Cancelada', returned: 'Devuelta', partially_received: 'Recibida parcialmente', received: 'Recibida' };
 const movementTypeLabels: Record<string, string> = { IN: 'Entrada', OUT: 'Salida', ADJUSTMENT: 'Ajuste', TRANSFER: 'Traslado', RETURN: 'Devolución' };
+// Cloudflare Pages builds apps/web in isolation from npm workspaces; keep this
+// UI list local while the API enforces the canonical enum in packages/validation.
+const PRODUCT_UNITS = ['pza', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'm2', 'm3', 'caja', 'paquete', 'par', 'docena', 'servicio'] as const;
 const productUnitLabels: Record<(typeof PRODUCT_UNITS)[number], string> = { pza: 'Pieza (pza)', kg: 'Kilogramo (kg)', g: 'Gramo (g)', l: 'Litro (l)', ml: 'Mililitro (ml)', m: 'Metro (m)', cm: 'Centímetro (cm)', m2: 'Metro cuadrado (m²)', m3: 'Metro cúbico (m³)', caja: 'Caja', paquete: 'Paquete', par: 'Par', docena: 'Docena', servicio: 'Servicio' };
 function isProductUnit(value: string): value is (typeof PRODUCT_UNITS)[number] { return (PRODUCT_UNITS as readonly string[]).includes(value); }
 
