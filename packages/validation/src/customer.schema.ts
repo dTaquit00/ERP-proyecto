@@ -41,6 +41,31 @@ export const clearableEmail = z.preprocess(
   emailSchema.nullable().optional(),
 );
 
+const phoneValueSchema = z
+  .string()
+  .trim()
+  .max(30)
+  .regex(/^\+?[0-9().\s-]+$/, 'El teléfono solo puede incluir números, espacios y + ( ) . -')
+  .refine((value) => {
+    const digits = value.replace(/\D/g, '').length;
+    return digits >= 7 && digits <= 15;
+  }, 'El teléfono debe contener entre 7 y 15 dígitos');
+
+const optionalPhone = z.preprocess(
+  (value) => (isBlank(value) ? undefined : value),
+  phoneValueSchema.optional(),
+);
+
+const clearablePhone = z.preprocess(
+  (value) => (isBlank(value) ? null : value),
+  phoneValueSchema.nullable().optional(),
+);
+
+const optionalMexicanPostalCode = z.preprocess(
+  (value) => (isBlank(value) ? undefined : value),
+  z.string().trim().regex(/^\d{5}$/, 'El código postal debe tener 5 dígitos').optional(),
+);
+
 /** Dirección opcional: todos sus componentes son opcionales. */
 export const addressSchema = z.object({
   street: optionalText(200),
@@ -49,12 +74,14 @@ export const addressSchema = z.object({
   zipCode: optionalText(20),
 });
 
+const customerAddressSchema = addressSchema.extend({ zipCode: optionalMexicanPostalCode });
+
 const customerFields = {
   name: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(120),
   email: optionalEmail,
-  phone: optionalText(30),
+  phone: optionalPhone,
   dni: optionalText(20),
-  address: addressSchema.optional(),
+  address: customerAddressSchema.optional(),
   notes: optionalText(1000),
 };
 
@@ -69,10 +96,10 @@ export const updateCustomerSchema = z
   .object({
     name: customerFields.name.optional(),
     email: clearableEmail,
-    phone: clearableText(30),
+    phone: clearablePhone,
     dni: clearableText(20),
     // La dirección se reemplaza completa (envía todos los campos que quieras conservar).
-    address: addressSchema.optional(),
+    address: customerAddressSchema.optional(),
     notes: clearableText(1000),
     isActive: z.boolean().optional(),
   })

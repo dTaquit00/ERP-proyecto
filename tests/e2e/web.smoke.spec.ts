@@ -24,6 +24,43 @@ test('E2E-002 valida campos obligatorios de login', async ({ page }) => {
   await expect(page.getByLabel('Contraseña')).toHaveAttribute('required', '');
 });
 
+test('E2E-005 protege rutas privadas y no muestra login a una sesión activa', async ({ page }) => {
+  await page.goto('/customers/new');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('heading', { name: 'Tu operación, en foco.' })).toBeVisible();
+
+  await signIn(page, 'administrador');
+  await page.goto('/login');
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('heading', { name: 'Resumen operativo' })).toBeVisible();
+});
+
+test('E2E-006 crea y consulta clientes con validación de teléfono y código postal', async ({ page }) => {
+  await signIn(page, 'administrador');
+  await page.goto('/customers/new');
+  await expect(page.getByRole('heading', { name: 'Nuevo cliente' })).toBeVisible();
+
+  const phone = page.getByLabel('Teléfono');
+  const postalCode = page.getByLabel('Código postal');
+  await phone.fill('abc');
+  expect(await phone.evaluate((element) => element.matches(':invalid'))).toBe(true);
+  await postalCode.fill('12A');
+  expect(await postalCode.evaluate((element) => element.matches(':invalid'))).toBe(true);
+
+  await page.getByLabel('Nombre').fill('Cliente E2E formulario completo');
+  await phone.fill('+52 (55) 1234-5678');
+  await postalCode.fill('01234');
+  await page.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page).toHaveURL(/\/customers$/);
+
+  const customerLink = page.getByRole('link', { name: 'Cliente E2E formulario completo' });
+  await expect(customerLink).toBeVisible();
+  await customerLink.click();
+  await expect(page.getByRole('heading', { name: 'Editar cliente' })).toBeVisible();
+  await expect(page.getByLabel('Teléfono')).toHaveValue('+52 (55) 1234-5678');
+  await expect(page.getByLabel('Código postal')).toHaveValue('01234');
+});
+
 test('E2E-003 crea producto, registra stock, confirma una venta y consulta/exporta el reporte', async ({ page }) => {
   await signIn(page, 'administrador');
 

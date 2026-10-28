@@ -6,7 +6,7 @@ import { getLandingPath } from './navigation';
 
 type Row = Record<string, unknown>;
 type EntityKind = 'customers' | 'suppliers' | 'warehouses' | 'branches' | 'companies' | 'users' | 'roles';
-type Field = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'number' | 'url' | 'password' | 'textarea' | 'select'; required?: boolean; minLength?: number; maxLength?: number; options?: Array<{ value: string; label: string }> };
+type Field = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'number' | 'url' | 'password' | 'textarea' | 'select'; required?: boolean; minLength?: number; maxLength?: number; pattern?: string; title?: string; inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search'; options?: Array<{ value: string; label: string }> };
 
 const permissionGroupTitles: Record<string, string> = {
   users: 'Usuarios y roles', roles: 'Usuarios y roles',
@@ -36,9 +36,9 @@ const permissionGroupOrder = [
 const fieldsFor: Record<Exclude<EntityKind, 'users' | 'roles'>, Field[]> = {
   customers: [
     { key: 'name', label: 'Nombre', required: true, minLength: 2, maxLength: 120 }, { key: 'email', label: 'Correo', type: 'email', maxLength: 254 },
-    { key: 'phone', label: 'Teléfono', type: 'tel', maxLength: 30 }, { key: 'dni', label: 'Identificación', maxLength: 20 },
+    { key: 'phone', label: 'Teléfono', type: 'tel', maxLength: 30, pattern: '\\+?[0-9(). -]{7,30}', title: 'Usa entre 7 y 15 dígitos; puedes incluir +, espacios, paréntesis, puntos o guiones.' }, { key: 'dni', label: 'Identificación', maxLength: 20 },
     { key: 'address.street', label: 'Calle y número', maxLength: 200 }, { key: 'address.city', label: 'Ciudad', maxLength: 100 },
-    { key: 'address.state', label: 'Estado / provincia', maxLength: 100 }, { key: 'address.zipCode', label: 'Código postal', maxLength: 20 },
+    { key: 'address.state', label: 'Estado / provincia', maxLength: 100 }, { key: 'address.zipCode', label: 'Código postal', maxLength: 5, pattern: '[0-9]{5}', inputMode: 'numeric', title: 'Ingresa los 5 dígitos del código postal mexicano.' },
     { key: 'notes', label: 'Notas', type: 'textarea', maxLength: 1000 },
   ],
   suppliers: [
@@ -85,6 +85,18 @@ function setNested(target: Row, path: string, value: unknown) {
 function readValue(data: Row, path: string): string {
   const value = path.split('.').reduce<unknown>((current, part) => current && typeof current === 'object' ? (current as Row)[part] : undefined, data);
   return value == null ? '' : String(value);
+}
+
+function customerFieldError(kind: EntityKind, key: string, value: string): string {
+  if (kind !== 'customers' || value.trim() === '') return '';
+  if (key === 'phone') {
+    const digits = value.replace(/\D/g, '').length;
+    if (!/^\+?[0-9().\s-]+$/.test(value) || digits < 7 || digits > 15) {
+      return 'Usa entre 7 y 15 dígitos; se permiten +, espacios, paréntesis, puntos y guiones.';
+    }
+  }
+  if (key === 'address.zipCode' && !/^\d{5}$/.test(value)) return 'El código postal mexicano debe contener exactamente 5 dígitos.';
+  return '';
 }
 
 export function EntityFormPage() {
@@ -292,7 +304,8 @@ export function EntityFormPage() {
             : field.key === 'branchId' ? <select value={String(values.branchId ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}><option value="">Sin sucursal</option>{branches.map((branch) => <option key={String(branch.id)} value={String(branch.id)}>{String(branch.name)}</option>)}</select>
             : field.type === 'select' ? <select required={field.required} value={String(values[field.key] ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}>{(field.options ?? []).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
           : field.type === 'textarea' ? <textarea minLength={field.minLength} maxLength={field.maxLength} value={readValue(values, field.key)} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)} />
-              : <input type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'} minLength={field.minLength} maxLength={field.maxLength ?? 254} required={field.required} disabled={!canWrite || Boolean(kind === 'roles' && id && field.key === 'name')} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />}
+          : <input type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'} minLength={field.minLength} maxLength={field.maxLength ?? 254} pattern={field.pattern} title={field.title} inputMode={field.inputMode} required={field.required} aria-invalid={Boolean(customerFieldError(kind, field.key, readValue(values, field.key)))} disabled={!canWrite || Boolean(kind === 'roles' && id && field.key === 'name')} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />}
+        {customerFieldError(kind, field.key, readValue(values, field.key)) && <small className="field-error" role="status">{customerFieldError(kind, field.key, readValue(values, field.key))}</small>}
       </label>)}
       {kind === 'roles' && <fieldset className="permission-grid"><legend>Permisos del rol</legend>{!canWrite ? roleFields.length ? <ul>{roleFields.map((permission) => <li key={permission}>{permission}</li>)}</ul> : <p className="muted">Este rol no tiene permisos asignados.</p> : permissionCatalogLoading ? <p className="muted">Cargando permisos disponibles…</p> : permissionCatalog.length ? groupPermissions(permissionCatalog).sort((a, b) => permissionGroupOrder.indexOf(a.title) - permissionGroupOrder.indexOf(b.title)).map((group) => <section key={group.title}><h3>{group.title}</h3>{group.values.map((permission) => <label className="checkbox-label" key={permission}><input type="checkbox" checked={roleFields.includes(permission)} onChange={(event) => update('permissions', event.target.checked ? [...roleFields, permission] : roleFields.filter((value) => value !== permission))} />{permission}</label>)}</section>) : <p className="error">El catálogo de permisos no está disponible; no guardes cambios hasta poder cargarlo.</p>}</fieldset>}
       {kind === 'users' && id && <section className="user-history"><h3>Historial de acceso</h3>{userHistoryError ? <p className="error">{userHistoryError}</p> : userHistory ? <><p>Cuenta creada: {userHistory.createdAt ? new Date(String(userHistory.createdAt)).toLocaleString('es-MX') : '—'}</p><p>Último inicio de sesión: {userHistory.lastLoginAt ? new Date(String(userHistory.lastLoginAt)).toLocaleString('es-MX') : 'Sin registros'}</p><p>Contraseña cambiada: {userHistory.passwordChangedAt ? new Date(String(userHistory.passwordChangedAt)).toLocaleString('es-MX') : '—'}</p><h4>Sesiones</h4>{((userHistory.sessions as Row[]) ?? []).length ? <ul>{((userHistory.sessions as Row[]) ?? []).map((session, index) => <li key={String(session.id ?? index)}>{session.active ? 'Activa' : session.revokedAt ? 'Revocada' : 'Expirada'} · último uso {session.lastUsedAt ? new Date(String(session.lastUsedAt)).toLocaleString('es-MX') : '—'} · vence {session.expiresAt ? new Date(String(session.expiresAt)).toLocaleString('es-MX') : '—'}</li>)}</ul> : <p className="muted">No hay sesiones para mostrar.</p>}{can('users.write') && ((userHistory.sessions as Row[]) ?? []).some((session) => session.active) && <button type="button" disabled={saving} onClick={() => void revokeUserSessions()}>{saving ? 'Cerrando sesiones…' : 'Cerrar todas las sesiones activas'}</button>}</> : <p className="muted">Cargando historial de acceso…</p>}</section>}

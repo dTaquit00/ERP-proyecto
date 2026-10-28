@@ -19,6 +19,11 @@ export const productTaxSchema = z.object({
   rate: z.number().min(0, 'La tasa no puede ser negativa').max(100, 'La tasa máxima es 100'),
 });
 
+/** Unidades normalizadas para mantener consistencia entre catálogo e inventario. */
+export const PRODUCT_UNITS = [
+  'pza', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'm2', 'm3', 'caja', 'paquete', 'par', 'docena', 'servicio',
+] as const;
+
 const productFields = {
   code: z.string().trim().max(60).optional(),
   sku: productSkuSchema,
@@ -31,7 +36,7 @@ const productFields = {
     .max(1_000_000_000),
   salePrice: z.number().min(0, 'El precio de venta no puede ser negativo').max(1_000_000_000),
   taxes: z.array(productTaxSchema).max(10).default([]),
-  unit: z.string().trim().min(1, 'La unidad es obligatoria').max(20),
+  unit: z.enum(PRODUCT_UNITS, { error: 'Selecciona una unidad de medida válida' }),
   isActive: z.boolean().default(true),
   image: z.string().trim().max(500).url('La imagen debe ser una URL válida').optional(),
   barcode: z.string().trim().max(60).optional(),

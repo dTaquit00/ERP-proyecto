@@ -165,6 +165,9 @@ td a:hover { text-decoration: underline; }
 .audit-filters > label { display: flex; align-items: center; gap: 7px; color: #666b7e; font-size: 10px; }
 .audit-filters > label input { width: 150px; }
 .audit-filters > select { flex: 1 1 150px; }
+.product-thumbnail { display: block; width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+.product-thumbnail-fallback { display: inline-flex; width: 48px; height: 48px; align-items: center; justify-content: center; padding: 4px; border: 1px dashed var(--line); border-radius: 7px; color: var(--muted); background: #f8f8fc; font-size: 8px; text-align: center; }
+.field-error { color: #b42318; font-size: 10px; line-height: 1.4; }
 @media (max-width: 760px) { .sale-line, .report-filters { grid-template-columns: 1fr; } }
 
 @media (min-width: 1500px) { .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
