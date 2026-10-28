@@ -33,6 +33,11 @@
 .dashboard-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .dashboard-heading h1 { font-size: clamp(25px, 3vw, 34px); letter-spacing: -.8px; }
 .dashboard-heading .muted { margin: 10px 0 0; font-size: 13px; }
+.dashboard-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; margin-top: 24px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink-soft); font-size: 12px; }
+.dashboard-filters > span { padding-bottom: 10px; color: var(--ink); font-weight: 700; }
+.dashboard-filters label { display: grid; gap: 5px; min-width: 190px; color: var(--ink-soft); font-size: 11px; }
+.dashboard-filters select { min-width: 190px; padding: 9px 11px; border: 1px solid #dfe1e9; border-radius: 8px; background: #fff; color: var(--ink); }
+.dashboard-filters small { flex-basis: 100%; color: var(--ink-soft); }
 .status-pill { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 4px; padding: 9px 13px; border: 1px solid #dcefe6; border-radius: 999px; background: #f3fbf7; color: #397b62; font-size: 10px; font-weight: 600; white-space: nowrap; }
 .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
 .metric, .panel { position: relative; min-width: 0; border: 1px solid var(--line); border-radius: 13px; background: var(--paper); box-shadow: 0 4px 16px rgb(20 24 54 / 3%); }
@@ -155,6 +160,11 @@ td a:hover { text-decoration: underline; }
 .audit-metadata { max-height: 360px; overflow: auto; padding: 14px; border-radius: 8px; background: #f6f6fa; color: #42475b; font-size: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .status-filter { display: inline-grid; gap: 6px; min-width: 220px; margin: 14px 0 0; color: #666b7e; font-size: 10px; }
 .status-filter select, .search-bar select { padding: 9px 11px; border: 1px solid #dfe1e9; border-radius: 8px; background: #fff; color: #41465a; }
+.audit-filters { flex-wrap: wrap; align-items: center; }
+.audit-filters > input { flex: 1 1 145px; }
+.audit-filters > label { display: flex; align-items: center; gap: 7px; color: #666b7e; font-size: 10px; }
+.audit-filters > label input { width: 150px; }
+.audit-filters > select { flex: 1 1 150px; }
 @media (max-width: 760px) { .sale-line, .report-filters { grid-template-columns: 1fr; } }
 
 @media (min-width: 1500px) { .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

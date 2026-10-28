@@ -38,6 +38,24 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retry 
   return body.data as T;
 }
 
+/** Carga todas las páginas de un endpoint paginado para selectores de referencia. */
+export async function apiListAll<T>(path: string, pageSize = 100): Promise<{ items: T[]; meta?: { total: number; totalPages: number } }> {
+  const [endpoint, queryString = ''] = path.split('?', 2);
+  const params = new URLSearchParams(queryString);
+  const limit = Math.min(Math.max(1, pageSize), 100);
+  params.set('limit', String(limit));
+  params.set('page', '1');
+  const firstPage = await apiRequest<{ items?: T[]; meta?: { totalPages?: number } }>(`${endpoint}?${params}`);
+  const items = [...(firstPage.items ?? [])];
+  const totalPages = Math.max(1, Number(firstPage.meta?.totalPages ?? 1));
+  for (let page = 2; page <= totalPages; page += 1) {
+    params.set('page', String(page));
+    const nextPage = await apiRequest<{ items?: T[] }>(`${endpoint}?${params}`);
+    items.push(...(nextPage.items ?? []));
+  }
+  return { items, meta: firstPage.meta as { total: number; totalPages: number } | undefined };
+}
+
 export async function login(email: string, password: string, companyId?: string): Promise<{ accessToken: string; user: Record<string, unknown> }> {
   const result = await apiRequest<{ accessToken: string; user: Record<string, unknown> }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password, ...(companyId ? { companyId } : {}) }) }, false);
   setAccessToken(result.accessToken);

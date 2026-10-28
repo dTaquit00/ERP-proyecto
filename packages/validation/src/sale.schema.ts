@@ -72,6 +72,7 @@ export const listSalesQuerySchema = paginationSchema
     search: z.string().trim().max(100).optional(),
     status: z.enum(SALE_STATUSES).optional(),
     customerId: idSchema.optional(),
+    branchId: idSchema.optional(),
     warehouseId: idSchema.optional(),
     dateFrom: isoDay.optional(),
     dateTo: isoDay.optional(),

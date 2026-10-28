@@ -6,9 +6,44 @@ import { CustomerModel } from '../customers/customers.model.js';
 import { SupplierModel } from '../suppliers/suppliers.model.js';
 import { ProductModel } from '../products/products.model.js';
 import { StockBalanceModel, InventoryMovementModel } from '../inventory/inventory.model.js';
+import { WarehouseModel } from '../warehouses/warehouses.model.js';
 
-function dayStart(date: Date): Date { const value = new Date(date); value.setUTCHours(0, 0, 0, 0); return value; }
-function monthStart(date: Date): Date { const value = dayStart(date); value.setUTCDate(1); return value; }
+const BUSINESS_TIME_ZONE = 'America/Mexico_City';
+const businessDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: BUSINESS_TIME_ZONE,
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+});
+
+function dateParts(date: Date): Record<string, number> {
+  return Object.fromEntries(businessDateFormatter.formatToParts(date)
+    .filter((part) => part.type !== 'literal')
+    .map((part) => [part.type, Number(part.value)]));
+}
+
+function localMidnightUtc(year: number, month: number, day: number): Date {
+  const target = Date.UTC(year, month - 1, day);
+  let guess = target;
+  // Recompute the zone offset at the guessed instant to handle DST transitions.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const parts = dateParts(new Date(guess));
+    const representedAsUtc = Date.UTC(parts.year!, parts.month! - 1, parts.day!, parts.hour!, parts.minute!, parts.second!);
+    const nextGuess = target - (representedAsUtc - guess);
+    if (nextGuess === guess) break;
+    guess = nextGuess;
+  }
+  return new Date(guess);
+}
+
+function dayStart(date: Date): Date {
+  const parts = dateParts(date);
+  return localMidnightUtc(parts.year!, parts.month!, parts.day!);
+}
+
+function monthStart(date: Date): Date {
+  const parts = dateParts(date);
+  return localMidnightUtc(parts.year!, parts.month!, 1);
+}
 
 export const dashboardService = {
   async summary(companyId: string, query: DashboardQueryInput) {
@@ -18,19 +53,26 @@ export const dashboardService = {
     const stockScope: Record<string, unknown> = { companyId: company };
     const movementScope: Record<string, unknown> = { companyId: company };
     if (query.branchId) saleScope.branchId = new Types.ObjectId(query.branchId);
-    if (query.warehouseId) {
-      saleScope.warehouseId = new Types.ObjectId(query.warehouseId);
-      purchaseScope.warehouseId = new Types.ObjectId(query.warehouseId);
-      stockScope.warehouseId = new Types.ObjectId(query.warehouseId);
-      movementScope.warehouseId = new Types.ObjectId(query.warehouseId);
+    if (query.branchId || query.warehouseId) {
+      const warehouseFilter: Record<string, unknown> = { companyId: company };
+      if (query.branchId) warehouseFilter.branchId = new Types.ObjectId(query.branchId);
+      if (query.warehouseId) warehouseFilter._id = new Types.ObjectId(query.warehouseId);
+      const warehouseIds = (await WarehouseModel.find(warehouseFilter).distinct('_id')).map((id) => new Types.ObjectId(id));
+      saleScope.warehouseId = { $in: warehouseIds };
+      purchaseScope.warehouseId = { $in: warehouseIds };
+      stockScope.warehouseId = { $in: warehouseIds };
+      movementScope.$or = [
+        { warehouseId: { $in: warehouseIds } },
+        { toWarehouseId: { $in: warehouseIds } },
+      ];
     }
     const now = new Date();
     const today = dayStart(now);
     const month = monthStart(now);
     const [salesToday, salesMonth, purchasesMonth, customers, suppliers, products, lowStock, outOfStock, valuation, recentSales, recentPurchases, recentMovements] = await Promise.all([
-      SaleModel.aggregate<{ total: number }>([{ $match: { ...saleScope, saleDate: { $gte: today } } }, { $group: { _id: null, total: { $sum: { $cond: [{ $eq: ['$status', 'returned'] }, { $multiply: ['$total', -1] }, '$total'] } } } }]),
-      SaleModel.aggregate<{ total: number }>([{ $match: { ...saleScope, saleDate: { $gte: month } } }, { $group: { _id: null, total: { $sum: { $cond: [{ $eq: ['$status', 'returned'] }, { $multiply: ['$total', -1] }, '$total'] } } } }]),
-      PurchaseModel.aggregate<{ total: number }>([{ $match: { ...purchaseScope, purchaseDate: { $gte: month } } }, { $group: { _id: null, total: { $sum: '$total' } } }]),
+      SaleModel.aggregate<{ total: number }>([{ $match: { ...saleScope, saleDate: { $gte: today, $lte: now } } }, { $group: { _id: null, total: { $sum: { $cond: [{ $eq: ['$status', 'returned'] }, { $multiply: ['$total', -1] }, '$total'] } } } }]),
+      SaleModel.aggregate<{ total: number }>([{ $match: { ...saleScope, saleDate: { $gte: month, $lte: now } } }, { $group: { _id: null, total: { $sum: { $cond: [{ $eq: ['$status', 'returned'] }, { $multiply: ['$total', -1] }, '$total'] } } } }]),
+      PurchaseModel.aggregate<{ total: number }>([{ $match: { ...purchaseScope, purchaseDate: { $gte: month, $lte: now } } }, { $group: { _id: null, total: { $sum: '$total' } } }]),
       CustomerModel.countDocuments({ companyId: company, isActive: true }),
       SupplierModel.countDocuments({ companyId: company, isActive: true }),
       ProductModel.countDocuments({ companyId: company, isActive: true }),

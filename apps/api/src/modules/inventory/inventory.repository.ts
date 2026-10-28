@@ -36,11 +36,22 @@ function stockScopeFilter(scope: StockScope): FilterQuery<StockBalanceSchemaType
 export function buildStockFilter(
   companyId: string,
   query: ListStockQueryInput,
+  branchWarehouseIds?: string[],
 ): FilterQuery<StockBalanceSchemaType> {
   const filter: FilterQuery<StockBalanceSchemaType> = {
     companyId: new Types.ObjectId(companyId),
   };
   if (query.warehouseId) filter.warehouseId = new Types.ObjectId(query.warehouseId);
+  if (branchWarehouseIds) {
+    const branchIds = branchWarehouseIds.map((id) => new Types.ObjectId(id));
+    if (query.warehouseId) {
+      filter.warehouseId = branchIds.some((id) => id.equals(query.warehouseId))
+        ? new Types.ObjectId(query.warehouseId)
+        : { $in: [] };
+    } else {
+      filter.warehouseId = { $in: branchIds };
+    }
+  }
   if (query.productId) filter.productId = new Types.ObjectId(query.productId);
   if (query.availability === 'in_stock') filter.quantity = { $gt: 0 };
   else if (query.availability === 'out_of_stock') filter.quantity = 0;
@@ -54,11 +65,26 @@ export function buildStockFilter(
 export function buildMovementFilter(
   companyId: string,
   query: ListMovementsQueryInput,
+  branchWarehouseIds?: string[],
 ): FilterQuery<InventoryMovementSchemaType> {
   const filter: FilterQuery<InventoryMovementSchemaType> = {
     companyId: new Types.ObjectId(companyId),
   };
-  if (query.warehouseId) filter.warehouseId = new Types.ObjectId(query.warehouseId);
+  if (query.warehouseId) {
+    const warehouseId = new Types.ObjectId(query.warehouseId);
+    filter.$or = [{ warehouseId }, { toWarehouseId: warehouseId }];
+  }
+  if (branchWarehouseIds) {
+    const branchIds = branchWarehouseIds.map((id) => new Types.ObjectId(id));
+    const selectedWarehouseBelongsToBranch = !query.warehouseId || branchIds.some((id) => id.equals(query.warehouseId));
+    const warehouseIds = query.warehouseId
+      ? selectedWarehouseBelongsToBranch ? [new Types.ObjectId(query.warehouseId)] : []
+      : branchIds;
+    filter.$or = [
+      { warehouseId: { $in: warehouseIds } },
+      { toWarehouseId: { $in: warehouseIds } },
+    ];
+  }
   if (query.productId) filter.productId = new Types.ObjectId(query.productId);
   if (query.type) filter.type = query.type;
   return filter;
@@ -74,8 +100,9 @@ export const inventoryRepository = {
   async listStock(
     companyId: string,
     query: ListStockQueryInput,
+    branchWarehouseIds?: string[],
   ): Promise<StockListResult> {
-    const filter = buildStockFilter(companyId, query);
+    const filter = buildStockFilter(companyId, query, branchWarehouseIds);
     const sort: Record<string, 1 | -1> = {
       [query.sort]: query.order === 'asc' ? 1 : -1,
     };
@@ -166,8 +193,9 @@ export const inventoryRepository = {
   async listMovements(
     companyId: string,
     query: ListMovementsQueryInput,
+    branchWarehouseIds?: string[],
   ): Promise<MovementListResult> {
-    const filter = buildMovementFilter(companyId, query);
+    const filter = buildMovementFilter(companyId, query, branchWarehouseIds);
     const sort: Record<string, 1 | -1> = {
       [query.sort]: query.order === 'asc' ? 1 : -1,
     };

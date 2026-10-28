@@ -37,3 +37,6 @@ Thumbs.db
 .vitest/
 test-results/
 playwright-report/
+
+# Bundle Android generado por Metro
+apps/mobile/android/app/src/main/assets/index.android.bundle

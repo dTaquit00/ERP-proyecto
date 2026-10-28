@@ -35,6 +35,7 @@ export const receiptIdempotencyKeySchema = z.string().trim().min(8).max(128).reg
 export const listPurchasesQuerySchema = paginationSchema.extend({
   status: z.enum(['pending', 'confirmed', 'partially_received', 'received', 'cancelled', 'returned']).optional(),
   supplierId: idSchema.optional(),
+  branchId: idSchema.optional(),
   warehouseId: idSchema.optional(),
   sort: z.enum(['purchaseDate', 'total', 'createdAt', 'updatedAt']).default('purchaseDate'),
   order: z.enum(['asc', 'desc']).default('desc'),

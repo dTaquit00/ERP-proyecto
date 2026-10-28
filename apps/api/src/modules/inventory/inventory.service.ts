@@ -159,7 +159,10 @@ export const inventoryService = {
     companyId: string,
     query: ListStockQueryInput,
   ): Promise<{ items: StockBalanceResponse[]; meta: PaginationMeta }> {
-    const { balances, total } = await inventoryRepository.listStock(companyId, query);
+    const branchWarehouseIds = query.branchId
+      ? await warehousesRepository.findIdsByBranch(companyId, query.branchId)
+      : undefined;
+    const { balances, total } = await inventoryRepository.listStock(companyId, query, branchWarehouseIds);
     const maps = await stockNameMaps(companyId, balances);
     return {
       items: balances.map((balance) => {
@@ -206,7 +209,10 @@ export const inventoryService = {
     companyId: string,
     query: ListMovementsQueryInput,
   ): Promise<{ items: InventoryMovementResponse[]; meta: PaginationMeta }> {
-    const { movements, total } = await inventoryRepository.listMovements(companyId, query);
+    const branchWarehouseIds = query.branchId
+      ? await warehousesRepository.findIdsByBranch(companyId, query.branchId)
+      : undefined;
+    const { movements, total } = await inventoryRepository.listMovements(companyId, query, branchWarehouseIds);
     return {
       items: movements.map(toMovementResponse),
       meta: {

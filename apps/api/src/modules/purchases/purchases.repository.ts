@@ -8,6 +8,7 @@ export function buildPurchaseFilter(companyId: string, query: ListPurchasesQuery
   const filter: FilterQuery<PurchaseSchemaType> = { companyId: new Types.ObjectId(companyId) };
   if (query.status) filter.status = query.status;
   if (query.supplierId) filter.supplierId = new Types.ObjectId(query.supplierId);
+  if (query.branchId) filter.branchId = new Types.ObjectId(query.branchId);
   if (query.warehouseId) filter.warehouseId = new Types.ObjectId(query.warehouseId);
   return filter;
 }

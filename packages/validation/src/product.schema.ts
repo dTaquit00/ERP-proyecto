@@ -42,18 +42,30 @@ export type CreateProductInput = z.output<typeof createProductSchema>;
 
 export const updateProductSchema = z
   .object({
-    code: productFields.code,
+    code: z.preprocess(
+      (value) => typeof value === 'string' && value.trim() === '' ? null : value,
+      z.string().trim().max(60).nullable().optional(),
+    ),
     sku: productFields.sku.optional(),
     name: productFields.name.optional(),
-    description: productFields.description,
+    description: z.preprocess(
+      (value) => typeof value === 'string' && value.trim() === '' ? null : value,
+      z.string().trim().max(1000).nullable().optional(),
+    ),
     categoryId: productFields.categoryId.optional(),
     purchasePrice: productFields.purchasePrice.optional(),
     salePrice: productFields.salePrice.optional(),
     taxes: z.array(productTaxSchema).max(10).optional(),
     unit: productFields.unit.optional(),
     isActive: z.boolean().optional(),
-    image: productFields.image,
-    barcode: productFields.barcode,
+    image: z.preprocess(
+      (value) => typeof value === 'string' && value.trim() === '' ? null : value,
+      z.string().trim().max(500).url('La imagen debe ser una URL válida').nullable().optional(),
+    ),
+    barcode: z.preprocess(
+      (value) => typeof value === 'string' && value.trim() === '' ? null : value,
+      z.string().trim().max(60).nullable().optional(),
+    ),
   })
   .refine((value) => Object.values(value).some((field) => field !== undefined), {
     message: 'Debes indicar al menos un campo a actualizar',

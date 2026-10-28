@@ -32,6 +32,7 @@ export function buildSaleFilter(
   };
   if (query.status) filter.status = query.status;
   if (query.customerId) filter.customerId = new Types.ObjectId(query.customerId);
+  if (query.branchId) filter.branchId = new Types.ObjectId(query.branchId);
   if (query.warehouseId) filter.warehouseId = new Types.ObjectId(query.warehouseId);
   if (query.dateFrom || query.dateTo) {
     const range: { $gte?: Date; $lt?: Date } = {};

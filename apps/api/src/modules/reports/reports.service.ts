@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import PDFDocument from 'pdfkit';
-import type { ReportQueryInput } from '@erp/validation';
+import type { ListReportQueryInput, ReportQueryInput } from '@erp/validation';
 import { SaleModel } from '../sales/sales.model.js';
 import { PurchaseModel } from '../purchases/purchases.model.js';
 import { StockBalanceModel, InventoryMovementModel } from '../inventory/inventory.model.js';
@@ -29,34 +29,72 @@ const csv = (rows: Array<Record<string, unknown>>): string => {
 };
 
 export const reportsService = {
-  async exportCsv(companyId: string, type: string, query: ReportQueryInput = {}): Promise<string> {
+  async list(companyId: string, type: string, query: ListReportQueryInput) {
     const filters = await buildFilters(companyId, type, query);
-    let rows: Array<Record<string, unknown>>;
+    const skip = (query.page - 1) * query.limit;
+    let items: Array<Record<string, unknown>>;
+    let total: number;
     switch (type) {
-      case 'sales': rows = await SaleModel.find(filters).sort({ saleDate: -1 }).limit(MAX_ROWS).lean().exec(); break;
-      case 'purchases': rows = await PurchaseModel.find(filters).sort({ purchaseDate: -1 }).limit(MAX_ROWS).lean().exec(); break;
-      case 'inventory': rows = await StockBalanceModel.find(filters).sort({ updatedAt: -1 }).limit(MAX_ROWS).lean().exec(); break;
-      case 'inventory-movements': rows = await InventoryMovementModel.find(filters).sort({ createdAt: -1 }).limit(MAX_ROWS).lean().exec(); break;
-      case 'products': rows = await ProductModel.find(filters).sort({ name: 1 }).limit(MAX_ROWS).lean().exec(); break;
-      case 'customers': rows = await CustomerModel.find(filters).sort({ name: 1 }).limit(MAX_ROWS).lean().exec(); break;
-      case 'suppliers': rows = await SupplierModel.find(filters).sort({ name: 1 }).limit(MAX_ROWS).lean().exec(); break;
+      case 'sales': [items, total] = await Promise.all([SaleModel.find(filters).sort({ saleDate: -1 }).skip(skip).limit(query.limit).lean().exec(), SaleModel.countDocuments(filters).exec()]); break;
+      case 'purchases': [items, total] = await Promise.all([PurchaseModel.find(filters).sort({ purchaseDate: -1 }).skip(skip).limit(query.limit).lean().exec(), PurchaseModel.countDocuments(filters).exec()]); break;
+      case 'inventory': [items, total] = await Promise.all([StockBalanceModel.find(filters).sort({ updatedAt: -1 }).skip(skip).limit(query.limit).lean().exec(), StockBalanceModel.countDocuments(filters).exec()]); break;
+      case 'inventory-movements': [items, total] = await Promise.all([InventoryMovementModel.find(filters).sort({ createdAt: -1 }).skip(skip).limit(query.limit).lean().exec(), InventoryMovementModel.countDocuments(filters).exec()]); break;
+      case 'products': [items, total] = await Promise.all([ProductModel.find(filters).sort({ name: 1 }).skip(skip).limit(query.limit).lean().exec(), ProductModel.countDocuments(filters).exec()]); break;
+      case 'customers': [items, total] = await Promise.all([CustomerModel.find(filters).sort({ name: 1 }).skip(skip).limit(query.limit).lean().exec(), CustomerModel.countDocuments(filters).exec()]); break;
+      case 'suppliers': [items, total] = await Promise.all([SupplierModel.find(filters).sort({ name: 1 }).skip(skip).limit(query.limit).lean().exec(), SupplierModel.countDocuments(filters).exec()]); break;
       default: throw new Error(`Unsupported report type: ${type}`);
     }
-    return csv(rows);
+    return {
+      items,
+      meta: { page: query.page, limit: query.limit, total, totalPages: Math.max(1, Math.ceil(total / query.limit)) },
+    };
+  },
+
+  async exportCsv(companyId: string, type: string, query: ReportQueryInput = {}): Promise<string> {
+    return csv(await fetchRows(companyId, type, query));
   },
   async exportPdf(companyId: string, type: string, query: ReportQueryInput = {}): Promise<Buffer> {
-    const content = await this.exportCsv(companyId, type, query);
+    const rows = await fetchRows(companyId, type, query);
     return new Promise((resolve) => {
       const document = new PDFDocument({ margin: 40 });
       const chunks: Buffer[] = [];
       document.on('data', (chunk: Buffer) => chunks.push(chunk));
       document.on('end', () => resolve(Buffer.concat(chunks)));
-      document.fontSize(18).text(`Reporte ${type}`, { underline: true });
-      document.moveDown().fontSize(8).text(content.replaceAll('\r\n', '\n'));
+      document.fontSize(18).text(`Reporte: ${type.replaceAll('-', ' ')}`, { underline: true });
+      document.moveDown().fontSize(9).fillColor('#52616b').text(`Generado: ${new Date().toLocaleString('es-MX')} · ${rows.length} registros`);
+      if (!rows.length) {
+        document.moveDown().fillColor('#172b27').text('No hay registros que coincidan con los filtros seleccionados.');
+      } else {
+        const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+        rows.forEach((row, index) => {
+          document.moveDown(0.7).fontSize(11).fillColor('#172b27').text(`Registro ${index + 1}`, { underline: true });
+          for (const column of columns) {
+            const value = row[column];
+            const printable = value === null || value === undefined
+              ? '—'
+              : typeof value === 'object' ? JSON.stringify(value) : String(value);
+            document.fontSize(8).fillColor('#263238').text(`${column}: ${printable}`, { indent: 10, lineGap: 2 });
+          }
+        });
+      }
       document.end();
     });
   },
 };
+
+async function fetchRows(companyId: string, type: string, query: ReportQueryInput): Promise<Array<Record<string, unknown>>> {
+  const filters = await buildFilters(companyId, type, query);
+  switch (type) {
+    case 'sales': return SaleModel.find(filters).sort({ saleDate: -1 }).limit(MAX_ROWS).lean().exec();
+    case 'purchases': return PurchaseModel.find(filters).sort({ purchaseDate: -1 }).limit(MAX_ROWS).lean().exec();
+    case 'inventory': return StockBalanceModel.find(filters).sort({ updatedAt: -1 }).limit(MAX_ROWS).lean().exec();
+    case 'inventory-movements': return InventoryMovementModel.find(filters).sort({ createdAt: -1 }).limit(MAX_ROWS).lean().exec();
+    case 'products': return ProductModel.find(filters).sort({ name: 1 }).limit(MAX_ROWS).lean().exec();
+    case 'customers': return CustomerModel.find(filters).sort({ name: 1 }).limit(MAX_ROWS).lean().exec();
+    case 'suppliers': return SupplierModel.find(filters).sort({ name: 1 }).limit(MAX_ROWS).lean().exec();
+    default: throw new Error(`Unsupported report type: ${type}`);
+  }
+}
 
 async function buildFilters(companyId: string, type: string, query: ReportQueryInput): Promise<Record<string, unknown>> {
   const filters: Record<string, unknown> = { companyId: new Types.ObjectId(companyId) };
@@ -70,10 +108,24 @@ async function buildFilters(companyId: string, type: string, query: ReportQueryI
     const matchingIds = query.warehouseId
       ? warehouseIds.filter((id) => id.toString() === query.warehouseId)
       : warehouseIds;
-    filters.warehouseId = { $in: matchingIds };
+    if (type === 'inventory-movements') {
+      filters.$or = [
+        { warehouseId: { $in: matchingIds } },
+        { toWarehouseId: { $in: matchingIds } },
+      ];
+    } else {
+      filters.warehouseId = { $in: matchingIds };
+    }
   } else {
     if (query.branchId) filters.branchId = new Types.ObjectId(query.branchId);
-    if (query.warehouseId) filters.warehouseId = new Types.ObjectId(query.warehouseId);
+    if (query.warehouseId) {
+      const warehouseId = new Types.ObjectId(query.warehouseId);
+      if (type === 'inventory-movements') {
+        filters.$or = [{ warehouseId }, { toWarehouseId: warehouseId }];
+      } else {
+        filters.warehouseId = warehouseId;
+      }
+    }
   }
   if (query.productId) {
     const productId = new Types.ObjectId(query.productId);

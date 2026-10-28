@@ -32,6 +32,12 @@ export function buildWarehouseFilter(
 }
 
 export const warehousesRepository = {
+  /** IDs de almacenes de una sucursal, siempre dentro de la empresa. */
+  async findIdsByBranch(companyId: string, branchId: string): Promise<string[]> {
+    const warehouses = await WarehouseModel.find({ companyId, branchId }).select('_id').lean().exec();
+    return warehouses.map((warehouse) => String(warehouse._id));
+  },
+
   async findById(id: string): Promise<WarehouseDocument | null> {
     return WarehouseModel.findById(id).exec();
   },

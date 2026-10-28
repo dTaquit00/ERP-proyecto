@@ -131,9 +131,24 @@ Definición de "terminado" aplicada por fase.
 - [x] Lint correcto · TypeScript sin errores · 361/361 tests · `npm run build` OK
 - [x] Documentación actualizada (api, test-cases, test-plan, quality-checklist, requirements, architecture, database, README)
 
+## Revisión funcional de la versión web
+
+- [x] Navegación por módulos según permisos; los roles con permisos de alta y permisos de catálogos requeridos llegan a sus formularios aunque no puedan consultar listados, incluyendo categorías; al cancelar o guardar continúan a otra ruta permitida; formularios conectados con la API.
+- [x] Alta de empresas visible para cuentas con `companies.write`; la API restringe la provisión al correo configurado como administrador de plataforma.
+- [x] Accesos de alta respetan los permisos requeridos por sus catálogos; los formularios explican cuando faltan registros activos o roles disponibles. La edición conserva la categoría de un producto y la sucursal de un almacén cuando el rol no puede consultar esos catálogos.
+- [x] Selectores de relaciones y filtros cargan todas las páginas de resultados de la API, no solo la primera página de 100 registros.
+- [x] Listas paginadas; búsqueda y filtros de estado activo/inactivo en productos, categorías, clientes, proveedores, almacenes, sucursales y usuarios.
+- [x] Productos filtrables por categoría y usuarios por rol, con selector o filtro por ID de acuerdo con los permisos disponibles.
+- [x] Historial de ventas/compras por cliente/proveedor y existencias por almacén con navegación paginada; ventas filtrables por estado.
+- [x] Inventario con filtros de existencias por sucursal, almacén, producto y disponibilidad; movimientos por sucursal, almacén, producto y tipo, incluyendo traslados cuyo origen o destino coincide; detalle individual y registro de IN/OUT/ADJUSTMENT/TRANSFER/RETURN con cantidades decimales según la unidad.
+- [x] Ventas y compras con sus transiciones, detalle e impacto en inventario, y recepciones parciales de compras.
+- [x] Listados de ventas y compras filtran por sucursal cuando el usuario tiene acceso al catálogo de sucursales.
+- [x] Reportes con consulta paginada, filtros disponibles y exportación CSV/PDF.
+- [x] Dashboard conectado a métricas reales, con filtros opcionales por sucursal/almacén; métricas operativas y movimientos respetan el alcance, y los conteos de catálogos se identifican como totales de empresa.
+- [x] Auditoría de mutaciones empresariales mediante middleware; el log guarda resultado y contexto sin copiar el cuerpo de la solicitud. La web consulta detalle y filtra por acción, recurso, resultado, usuario y rango de fechas.
+- [x] API/shared build, web build, lint y `git diff --check` correctos en la revisión actual.
+
 ## Pendiente para fases siguientes
 
-- [ ] Auditoría (`audit_logs`) al confirmar operaciones empresariales — Fase 15
-- [ ] Paginación/filtros en todos los listados — desde Fase 7
-- [ ] `npm audit` + pentest interno — Fase 17–18
-- [ ] E2E completo (login → venta → inventario → reporte) — Fase 17
+- [ ] E2E completo en navegador (login → venta → inventario → reporte) y recorrido con los permisos de cada rol — Fase 17.
+- [ ] `npm audit` y pentest interno — Fases 17–18.

@@ -169,9 +169,9 @@ Todas las operaciones están aisladas por el `companyId` del usuario autenticado
 
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|
-| GET | `/purchases` | `purchases.read` | Listado paginado por estado, proveedor o almacén. |
+| GET | `/purchases` | `purchases.read` | Listado paginado. Query: `page, limit, status, supplierId, branchId, warehouseId, sort, order`. |
 | GET | `/purchases/:id` | `purchases.read` | Detalle con snapshots e historial. |
-| POST | `/purchases` | `purchases.write` | Crea compra pendiente; backend calcula importes. |
+| POST | `/purchases` | `purchases.write` | Crea compra pendiente; backend calcula importes. Las cantidades son enteras positivas. |
 | POST | `/purchases/:id/confirm` | `purchases.confirm` | Confirma la orden. |
 | POST | `/purchases/:id/receive` | `purchases.receive` | Recibe parcial o totalmente y crea movimientos `IN` en transacción. Reutiliza `Idempotency-Key` al reintentar la misma recepción. |
 | POST | `/purchases/:id/cancel` | `purchases.cancel` | Cancela una compra pendiente o confirmada. |
@@ -180,7 +180,12 @@ Todas las operaciones están aisladas por el `companyId` del usuario autenticado
 ## M14-M16 — Dashboard, reportes y auditoría
 
 `GET /dashboard/summary` devuelve métricas reales scoped por empresa y admite
-`branchId`/`warehouseId`. `GET /reports/:type.csv` exporta ventas, compras,
+`branchId`/`warehouseId`. Estos filtros aplican a ventas, compras, existencias y
+movimientos (incluyendo traslados con destino al almacén seleccionado); los
+conteos de clientes, proveedores y productos activos permanecen a nivel empresa.
+Los cortes de ventas de hoy y del mes usan el calendario de `America/Mexico_City`
+y excluyen operaciones con fecha futura.
+`GET /reports/:type.csv` exporta ventas, compras,
 inventario, movimientos, productos, clientes o proveedores con filtros de fecha,
 sucursal, almacén y referencias, límite de 5.000 filas y escape contra CSV injection.
 `GET /reports/:type.pdf` genera el mismo reporte como PDF desde el servicio de exportación.
@@ -218,7 +223,7 @@ Todos exigen `Authorization: Bearer` y RBAC en backend. Scope: siempre la empres
 | GET | `/products` | `products.read` | Listado paginado con `categoryName`. Query: `page, limit, search(nombre/sku/código/barras), categoryId, status(active\|inactive), sort(sku\|name\|purchasePrice\|salePrice\|createdAt\|updatedAt), order`. |
 | GET | `/products/:id` | `products.read` | Detalle con precios e impuestos. Otra empresa → 404. |
 | POST | `/products` | `products.write` | `{sku, name, categoryId, purchasePrice, salePrice, unit, code?, description?, taxes?, isActive?, image?, barcode?}` → 201. |
-| PATCH | `/products/:id` | `products.write` | Edita cualquier campo permitido; `sku` y `categoryId` se revalidan. Body no vacío (400). |
+| PATCH | `/products/:id` | `products.write` | Edita cualquier campo permitido; `sku` y `categoryId` se revalidan. Para limpiar `code`, `description`, `image` o `barcode`, envía `null` (el formulario web lo hace al dejar vacío el campo). Body no vacío (400). |
 
 Reglas de negocio:
 
@@ -297,10 +302,10 @@ son **inmutables** (solo `POST`, sin PATCH/DELETE) y registran `quantityAfter`.
 
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|
-| GET | `/inventory/stock` | `inventory.read` | Existencias `{items, meta}` con `warehouseName`, `productName/Sku`, `quantity`, `minStock`, `lowStock`. Query: `warehouseId, productId, availability(in_stock\|out_of_stock\|low), sort(quantity\|minStock\|updatedAt\|createdAt), order`. |
+| GET | `/inventory/stock` | `inventory.read` | Existencias `{items, meta}` con `warehouseName`, `productName/Sku`, `quantity`, `minStock`, `lowStock`. Query: `branchId, warehouseId, productId, availability(in_stock\|out_of_stock\|low), sort(quantity\|minStock\|updatedAt\|createdAt), order`. `branchId` limita el resultado a almacenes asociados a esa sucursal. |
 | GET | `/inventory/stock/:id` | `inventory.read` | Detalle de existencia. Otra empresa → 404. |
 | PATCH | `/inventory/stock/:id` | `inventory.write` | `{minStock ≥ 0}` — umbral de "stock bajo" (dashboard M14). |
-| GET | `/inventory/movements` | `inventory.read` | Histórico paginado. Query: `warehouseId, productId, type(IN\|OUT\|ADJUSTMENT\|TRANSFER\|RETURN), sort(createdAt\|type\|quantity), order`. |
+| GET | `/inventory/movements` | `inventory.read` | Histórico paginado. Query: `branchId` (almacenes de origen o destino), `warehouseId` (origen o destino), `productId`, `type(IN\|OUT\|ADJUSTMENT\|TRANSFER\|RETURN), sort(createdAt\|type\|quantity), order`. |
 | GET | `/inventory/movements/:id` | `inventory.read` | Detalle de movimiento. Otra empresa → 404. |
 | POST | `/inventory/movements` | `inventory.write` + `inventory.transfer` (TRANSFER) / `inventory.adjust` (ADJUSTMENT) | `{type, warehouseId, toWarehouseId?(TRANSFER), productId, quantity, reason?, documentRef?}` → 201 con `quantityAfter`. |
 
@@ -334,7 +339,7 @@ unitario **nunca** proviene del cliente (las claves desconocidas del body se des
 
 | Método | Ruta | Permiso | Descripción |
 |---|---|---|---|
-| GET | `/sales` | `sales.read` | Listado paginado. Query: `page, limit, search(cliente/producto/SKU sobre snapshots), status(pending\|confirmed\|cancelled\|returned), customerId, warehouseId, dateFrom, dateTo (días calendario UTC inclusivos), sort(saleDate\|total\|createdAt\|updatedAt), order`. |
+| GET | `/sales` | `sales.read` | Listado paginado. Query: `page, limit, search(cliente/producto/SKU sobre snapshots), status(pending\|confirmed\|cancelled\|returned), customerId, branchId, warehouseId, dateFrom, dateTo (días calendario UTC inclusivos), sort(saleDate\|total\|createdAt\|updatedAt), order`. |
 | GET | `/sales/:id` | `sales.read` | Detalle con `items[]`, `history[]` de transiciones y snapshots. Otra empresa → 404. |
 | POST | `/sales` | `sales.write` | `{customerId, warehouseId, branchId?, saleDate?(ISO), notes?, items:[{productId, quantity ≥ 1, discount? (0–100 %)}]}` → 201 en `pending`; 1–100 líneas y sin producto repetido. |
 | POST | `/sales/:id/confirm` | `sales.confirm` | `pending → confirmed` + movimientos `OUT` por ítem **en una transacción**: sin stock → 409 `INSUFFICIENT_STOCK` y rollback total (venta sigue `pending`). |

@@ -11,8 +11,10 @@ npm run dev --workspace apps/web
 npm run build --workspace apps/web
 ```
 
-Configura `VITE_API_URL` con la URL base de la API (por ejemplo,
-`https://data-erp-api.onrender.com/api/v1`).
+En desarrollo, Vite reenvía automáticamente `/api/v1` a `http://localhost:3000`,
+por lo que basta con iniciar la API y la web. Para apuntar a otra API, define
+`VITE_API_URL` con su URL base. En Cloudflare Pages se usa por defecto la Pages
+Function del mismo origen, configurada mediante `API_ORIGIN`.
 
 ## Punto de venta
 

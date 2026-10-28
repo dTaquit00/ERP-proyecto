@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
-import { apiRequest } from '../services/api';
+import { apiListAll, apiRequest } from '../services/api';
+import { getLandingPath } from './navigation';
 
 type Row = Record<string, unknown>;
 type EntityKind = 'customers' | 'suppliers' | 'warehouses' | 'branches' | 'companies' | 'users' | 'roles';
@@ -61,7 +62,7 @@ const fieldsFor: Record<Exclude<EntityKind, 'users' | 'roles'>, Field[]> = {
     { key: 'taxId', label: 'RFC / identificación fiscal', maxLength: 50 }, { key: 'phone', label: 'Teléfono', type: 'tel', maxLength: 50 },
     { key: 'email', label: 'Correo', type: 'email', maxLength: 254 }, { key: 'address', label: 'Dirección', maxLength: 300 },
     { key: 'status', label: 'Estado', type: 'select', options: [{ value: 'active', label: 'Activa' }, { value: 'inactive', label: 'Inactiva' }] },
-    { key: 'settingsJson', label: 'Configuración (JSON)', type: 'textarea', maxLength: 1000 },
+    { key: 'settingsJson', label: 'Configuración (JSON)', type: 'textarea' },
   ],
 };
 
@@ -95,14 +96,19 @@ export function EntityFormPage() {
   const [values, setValues] = useState<Row>({ isActive: true, status: 'active', permissions: [] });
   const [branches, setBranches] = useState<Row[]>([]);
   const [roles, setRoles] = useState<Row[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
   const [permissionCatalog, setPermissionCatalog] = useState<string[]>([]);
   const [permissionCatalogLoading, setPermissionCatalogLoading] = useState(false);
   const [userHistory, setUserHistory] = useState<Row | null>(null);
   const [userHistoryError, setUserHistoryError] = useState('');
   const [relatedHistory, setRelatedHistory] = useState<Row[]>([]);
+  const [relatedHistoryPage, setRelatedHistoryPage] = useState(1);
+  const [relatedHistoryTotalPages, setRelatedHistoryTotalPages] = useState(1);
   const [relatedHistoryError, setRelatedHistoryError] = useState('');
   const [relatedHistoryLoading, setRelatedHistoryLoading] = useState(false);
   const [warehouseStock, setWarehouseStock] = useState<Row[]>([]);
+  const [warehouseStockPage, setWarehouseStockPage] = useState(1);
+  const [warehouseStockTotalPages, setWarehouseStockTotalPages] = useState(1);
   const [warehouseStockError, setWarehouseStockError] = useState('');
   const [warehouseStockLoading, setWarehouseStockLoading] = useState(false);
   const canReadInventory = can('inventory.read');
@@ -125,8 +131,13 @@ export function EntityFormPage() {
 
   useEffect(() => {
     let active = true;
+    setValues({ isActive: true, status: 'active', permissions: [] });
+    setBranches([]); setRoles([]); setRolesLoading(false); setPermissionCatalog([]);
+    setUserHistory(null); setRelatedHistory([]); setWarehouseStock([]);
+    setRelatedHistoryPage(1); setRelatedHistoryTotalPages(1); setWarehouseStockPage(1); setWarehouseStockTotalPages(1);
     setEntityLoaded(!id);
     setLoading(Boolean(id));
+    setSaving(false);
     setError('');
     setUserHistoryError(''); setRelatedHistoryError(''); setWarehouseStockError('');
     if (!isKnown) return () => { active = false; };
@@ -138,12 +149,15 @@ export function EntityFormPage() {
         .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudo cargar el catálogo de permisos'); })
         .finally(() => { if (active) setPermissionCatalogLoading(false); });
     }
-    if (kind === 'warehouses' && canReadBranches) apiRequest<{ items: Row[] }>('/branches?limit=100&status=active').then((result) => { if (active) setBranches(result.items ?? []); }).catch(() => undefined);
-    if (kind === 'users' && canReadRoles) apiRequest<{ items: Row[] }>('/roles?limit=100').then((result) => { if (active) setRoles(result.items ?? []); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar los roles'); });
+    if (kind === 'warehouses' && canReadBranches) apiListAll<Row>('/branches?status=active').then((result) => { if (active) setBranches(result.items); }).catch(() => undefined);
+    if (kind === 'users' && canReadRoles) {
+      setRolesLoading(true);
+      apiListAll<Row>('/roles')
+        .then((result) => { if (active) setRoles(result.items ?? []); })
+        .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar los roles'); })
+        .finally(() => { if (active) setRolesLoading(false); });
+    }
     if (kind === 'users' && id) apiRequest<Row>(`/users/${id}/history`).then((result) => { if (active) setUserHistory(result); }).catch((reason) => { if (active) setUserHistoryError(reason instanceof Error ? reason.message : 'No se pudo cargar el historial de acceso'); });
-    if (kind === 'customers' && id && canReadSales) { setRelatedHistoryLoading(true); apiRequest<{ items: Row[] }>(`/sales?customerId=${encodeURIComponent(id)}&limit=100`).then((result) => { if (active) setRelatedHistory(result.items ?? []); }).catch((reason) => { if (active) setRelatedHistoryError(reason instanceof Error ? reason.message : 'No se pudo cargar el historial de ventas'); }).finally(() => { if (active) setRelatedHistoryLoading(false); }); }
-    if (kind === 'suppliers' && id && canReadPurchases) { setRelatedHistoryLoading(true); apiRequest<{ items: Row[] }>(`/purchases?supplierId=${encodeURIComponent(id)}&limit=100`).then((result) => { if (active) setRelatedHistory(result.items ?? []); }).catch((reason) => { if (active) setRelatedHistoryError(reason instanceof Error ? reason.message : 'No se pudo cargar el historial de compras'); }).finally(() => { if (active) setRelatedHistoryLoading(false); }); }
-    if (kind === 'warehouses' && id && canReadInventory) { setWarehouseStockLoading(true); apiRequest<{ items: Row[] }>(`/warehouses/${id}/inventory?limit=100`).then((result) => { if (active) setWarehouseStock(result.items ?? []); }).catch((reason) => { if (active) setWarehouseStockError(reason instanceof Error ? reason.message : 'No se pudo cargar el inventario del almacén'); }).finally(() => { if (active) setWarehouseStockLoading(false); }); }
     if (id) {
       apiRequest<Row>(`/${kind}/${id}`)
         .then((item) => { if (active) { setValues({ ...item, settingsJson: JSON.stringify(item.settings ?? {}, null, 2), password: '', ...(['customers', 'suppliers'].includes(kind) ? { address: item.address && typeof item.address === 'object' ? item.address : {} } : {}) }); setEntityLoaded(true); } })
@@ -152,6 +166,29 @@ export function EntityFormPage() {
     }
     return () => { active = false; };
   }, [id, kind, isKnown, title, canReadEntity, canReadBranches, canReadInventory, canReadRoles, canReadSales, canReadPurchases, canWrite]);
+
+  useEffect(() => {
+    let active = true;
+    if (!id || !((kind === 'customers' && canReadSales) || (kind === 'suppliers' && canReadPurchases))) return () => { active = false; };
+    const endpoint = kind === 'customers' ? `/sales?customerId=${encodeURIComponent(id)}` : `/purchases?supplierId=${encodeURIComponent(id)}`;
+    setRelatedHistoryLoading(true); setRelatedHistoryError('');
+    apiRequest<{ items: Row[]; meta?: Row }>(`${endpoint}&page=${relatedHistoryPage}&limit=20`)
+      .then((result) => { if (active) { setRelatedHistory(result.items ?? []); setRelatedHistoryTotalPages(Math.max(1, Number(result.meta?.totalPages ?? 1))); } })
+      .catch((reason) => { if (active) setRelatedHistoryError(reason instanceof Error ? reason.message : 'No se pudo cargar el historial'); })
+      .finally(() => { if (active) setRelatedHistoryLoading(false); });
+    return () => { active = false; };
+  }, [id, kind, canReadSales, canReadPurchases, relatedHistoryPage]);
+
+  useEffect(() => {
+    let active = true;
+    if (!id || kind !== 'warehouses' || !canReadInventory) return () => { active = false; };
+    setWarehouseStockLoading(true); setWarehouseStockError('');
+    apiRequest<{ items: Row[]; meta?: Row }>(`/warehouses/${id}/inventory?page=${warehouseStockPage}&limit=20`)
+      .then((result) => { if (active) { setWarehouseStock(result.items ?? []); setWarehouseStockTotalPages(Math.max(1, Number(result.meta?.totalPages ?? 1))); } })
+      .catch((reason) => { if (active) setWarehouseStockError(reason instanceof Error ? reason.message : 'No se pudo cargar el inventario del almacén'); })
+      .finally(() => { if (active) setWarehouseStockLoading(false); });
+    return () => { active = false; };
+  }, [id, kind, canReadInventory, warehouseStockPage]);
 
   function update(key: string, value: unknown) {
     setValues((current) => {
@@ -169,7 +206,13 @@ export function EntityFormPage() {
     const body: Row = { ...values };
     delete body.id; delete body.companyId; delete body.createdAt; delete body.updatedAt; delete body.isSystem; delete body.userCount;
     if (kind === 'companies') {
-      try { body.settings = JSON.parse(String(body.settingsJson || '{}')) as Record<string, unknown>; }
+      try {
+        const settings: unknown = JSON.parse(String(body.settingsJson || '{}'));
+        if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+          setSaving(false); setError('La configuración debe ser un objeto JSON, por ejemplo {"moneda":"MXN"}.'); return;
+        }
+        body.settings = settings as Record<string, unknown>;
+      }
       catch { setSaving(false); setError('La configuración debe ser un JSON válido.'); return; }
       delete body.settingsJson;
     }
@@ -178,7 +221,7 @@ export function EntityFormPage() {
     if (kind === 'warehouses' && !body.branchId) { if (id) body.branchId = null; else delete body.branchId; }
     try {
       await apiRequest(id ? `/${kind}/${id}` : `/${kind}`, { method: id ? 'PATCH' : 'POST', body: JSON.stringify(body) });
-      navigate(`/${kind}`);
+      navigate(id || canReadEntity ? `/${kind}` : getLandingPath(user?.permissions ?? []));
     } catch (reason) { setError(reason instanceof Error ? reason.message : `No se pudo guardar el ${title}`); }
     finally { setSaving(false); }
   }
@@ -224,7 +267,6 @@ export function EntityFormPage() {
   }
 
   if (!isKnown) return <div className="panel"><h2>Módulo no disponible</h2><p className="muted">No existe un formulario para este recurso.</p></div>;
-  if (kind === 'companies' && !id) return <div className="panel"><h2>Alta de empresas no disponible</h2><p className="muted">El registro de nuevas empresas está reservado a la administración de plataforma. Desde aquí puedes consultar y editar la empresa de tu sesión.</p><Link className="secondary-button" to="/companies">Volver a Empresa</Link></div>;
   if (!id && kind === 'users' && !canReadRoles) return <div className="error">Para crear un usuario necesitas también permiso para consultar roles y poder asignarle uno.</div>;
   if (!id && kind === 'roles' && !canReadRoles) return <div className="error">Para crear un rol necesitas permiso para consultar el catálogo de permisos.</div>;
   if (id ? !canReadEntity || (!canWrite && !supportsReadOnlyDetail) : !canWrite) return <div className="error">Tu rol no tiene permiso para {id ? 'consultar' : 'crear'} {title === 'almacén' ? 'el almacén' : `el ${title}`}.</div>;
@@ -238,28 +280,30 @@ export function EntityFormPage() {
 
   return <div className="panel entity-form-panel">
     <p className="eyebrow">{kind.toUpperCase()}</p>
-    <h2>{id ? `${canWrite ? 'Editar' : 'Consultar'} ${title}` : `Nuevo ${title}`}</h2>
-    <p className="muted">{canWrite ? 'Los cambios se guardan en la empresa de tu sesión.' : 'Vista de consulta. Tu rol no puede modificar este registro.'}</p>
+    <h2>{id ? `${canWrite ? 'Editar' : 'Consultar'} ${title}` : kind === 'companies' ? 'Nueva empresa' : `Nuevo ${title}`}</h2>
+    <p className="muted">{kind === 'companies' && !id ? 'La creación está reservada al administrador de plataforma; la API verificará tu cuenta al guardar.' : canWrite ? 'Los cambios se guardan en la empresa de tu sesión.' : 'Vista de consulta. Tu rol no puede modificar este registro.'}</p>
     {error && <p className="error">{error}</p>}
+    {!id && kind === 'users' && rolesLoading && <p className="muted" role="status">Cargando roles disponibles…</p>}{!id && kind === 'users' && canReadRoles && !rolesLoading && !roles.length && <p className="error">No hay roles disponibles para asignar. Crea un rol antes de registrar usuarios.</p>}
     <form className="product-form entity-form" onSubmit={(event) => void submit(event)}>
       {fields.map((field) => <label key={field.key}>{field.label}
         {field.key === 'roleId' && !canReadRoles ? <input value={String(values.roleName ?? values.roleId ?? 'Sin rol')} disabled />
-          : field.key === 'roleId' ? <select required value={String(values.roleId ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}><option value="">Selecciona un rol</option>{roles.map((role) => <option key={String(role.id)} value={String(role.id)}>{String(role.displayName ?? role.name)}</option>)}</select>
-          : field.key === 'branchId' ? <select value={String(values.branchId ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}><option value="">Sin sucursal</option>{branches.map((branch) => <option key={String(branch.id)} value={String(branch.id)}>{String(branch.name)}</option>)}</select>
+          : field.key === 'roleId' ? <select required value={String(values.roleId ?? '')} disabled={!canWrite || rolesLoading} onChange={(event) => update(field.key, event.target.value)}><option value="">{rolesLoading ? 'Cargando roles…' : 'Selecciona un rol'}</option>{roles.map((role) => <option key={String(role.id)} value={String(role.id)}>{String(role.displayName ?? role.name)}</option>)}</select>
+          : field.key === 'branchId' && !canReadBranches ? <><input value={id ? String(values.branchId ?? 'Sin sucursal') : 'Sin asignar'} disabled /><small className="muted">{id ? 'No tienes permiso para consultar sucursales; se conservará la asignación actual.' : 'Necesitas permiso para consultar sucursales para poder asignar una.'}</small></>
+            : field.key === 'branchId' ? <select value={String(values.branchId ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}><option value="">Sin sucursal</option>{branches.map((branch) => <option key={String(branch.id)} value={String(branch.id)}>{String(branch.name)}</option>)}</select>
             : field.type === 'select' ? <select required={field.required} value={String(values[field.key] ?? '')} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)}>{(field.options ?? []).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
-          : field.type === 'textarea' ? <textarea minLength={field.minLength} maxLength={field.maxLength ?? 1000} value={readValue(values, field.key)} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)} />
+          : field.type === 'textarea' ? <textarea minLength={field.minLength} maxLength={field.maxLength} value={readValue(values, field.key)} disabled={!canWrite} onChange={(event) => update(field.key, event.target.value)} />
               : <input type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'} minLength={field.minLength} maxLength={field.maxLength ?? 254} required={field.required} disabled={!canWrite || Boolean(kind === 'roles' && id && field.key === 'name')} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />}
       </label>)}
       {kind === 'roles' && <fieldset className="permission-grid"><legend>Permisos del rol</legend>{!canWrite ? roleFields.length ? <ul>{roleFields.map((permission) => <li key={permission}>{permission}</li>)}</ul> : <p className="muted">Este rol no tiene permisos asignados.</p> : permissionCatalogLoading ? <p className="muted">Cargando permisos disponibles…</p> : permissionCatalog.length ? groupPermissions(permissionCatalog).sort((a, b) => permissionGroupOrder.indexOf(a.title) - permissionGroupOrder.indexOf(b.title)).map((group) => <section key={group.title}><h3>{group.title}</h3>{group.values.map((permission) => <label className="checkbox-label" key={permission}><input type="checkbox" checked={roleFields.includes(permission)} onChange={(event) => update('permissions', event.target.checked ? [...roleFields, permission] : roleFields.filter((value) => value !== permission))} />{permission}</label>)}</section>) : <p className="error">El catálogo de permisos no está disponible; no guardes cambios hasta poder cargarlo.</p>}</fieldset>}
       {kind === 'users' && id && <section className="user-history"><h3>Historial de acceso</h3>{userHistoryError ? <p className="error">{userHistoryError}</p> : userHistory ? <><p>Cuenta creada: {userHistory.createdAt ? new Date(String(userHistory.createdAt)).toLocaleString('es-MX') : '—'}</p><p>Último inicio de sesión: {userHistory.lastLoginAt ? new Date(String(userHistory.lastLoginAt)).toLocaleString('es-MX') : 'Sin registros'}</p><p>Contraseña cambiada: {userHistory.passwordChangedAt ? new Date(String(userHistory.passwordChangedAt)).toLocaleString('es-MX') : '—'}</p><h4>Sesiones</h4>{((userHistory.sessions as Row[]) ?? []).length ? <ul>{((userHistory.sessions as Row[]) ?? []).map((session, index) => <li key={String(session.id ?? index)}>{session.active ? 'Activa' : session.revokedAt ? 'Revocada' : 'Expirada'} · último uso {session.lastUsedAt ? new Date(String(session.lastUsedAt)).toLocaleString('es-MX') : '—'} · vence {session.expiresAt ? new Date(String(session.expiresAt)).toLocaleString('es-MX') : '—'}</li>)}</ul> : <p className="muted">No hay sesiones para mostrar.</p>}{can('users.write') && ((userHistory.sessions as Row[]) ?? []).some((session) => session.active) && <button type="button" disabled={saving} onClick={() => void revokeUserSessions()}>{saving ? 'Cerrando sesiones…' : 'Cerrar todas las sesiones activas'}</button>}</> : <p className="muted">Cargando historial de acceso…</p>}</section>}
-      {id && kind === 'customers' && <section className="user-history"><h3>Historial de ventas del cliente</h3>{!canReadSales ? <p className="muted">Tu rol no tiene permiso para consultar ventas.</p> : relatedHistoryError ? <p className="error">{relatedHistoryError}</p> : relatedHistoryLoading ? <p className="muted">Cargando historial…</p> : relatedHistory.length ? <ul>{relatedHistory.map((entry) => <li key={String(entry.id)}>{entry.saleDate ? new Date(String(entry.saleDate)).toLocaleDateString('es-MX') : 'Fecha desconocida'} · {String(entry.status)} · {Number(entry.total ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</li>)}</ul> : <p className="muted">No hay operaciones registradas para esta ficha.</p>}</section>}
-      {id && kind === 'suppliers' && <section className="user-history"><h3>Historial de compras al proveedor</h3>{!canReadPurchases ? <p className="muted">Tu rol no tiene permiso para consultar compras.</p> : relatedHistoryError ? <p className="error">{relatedHistoryError}</p> : relatedHistoryLoading ? <p className="muted">Cargando historial…</p> : relatedHistory.length ? <ul>{relatedHistory.map((entry) => <li key={String(entry.id)}>{entry.purchaseDate ? new Date(String(entry.purchaseDate)).toLocaleDateString('es-MX') : 'Fecha desconocida'} · {String(entry.status)} · {Number(entry.total ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</li>)}</ul> : <p className="muted">No hay operaciones registradas para esta ficha.</p>}</section>}
-      {kind === 'warehouses' && id && canReadInventory && <section className="user-history"><h3>Existencias en este almacén</h3>{warehouseStockError ? <p className="error">{warehouseStockError}</p> : warehouseStockLoading ? <p className="muted">Cargando existencias…</p> : warehouseStock.length ? <div className="table-panel"><table><thead><tr><th>Producto</th><th>Existencia</th><th>Mínimo</th><th>Estado</th></tr></thead><tbody>{warehouseStock.map((stock, index) => { const quantity = Number(stock.quantity ?? 0); const availability = quantity <= 0 ? 'Agotado' : stock.lowStock === true ? 'Stock bajo' : 'Disponible'; return <tr key={String(stock.id ?? index)}><td>{String(stock.productName ?? stock.productSku ?? '—')}</td><td>{String(quantity)}</td><td>{String(stock.minStock ?? 0)}</td><td>{availability}</td></tr>; })}</tbody></table></div> : <p className="muted">Este almacén todavía no tiene existencias.</p>}</section>}
+      {id && kind === 'customers' && <section className="user-history"><h3>Historial de ventas del cliente</h3>{!canReadSales ? <p className="muted">Tu rol no tiene permiso para consultar ventas.</p> : relatedHistoryError ? <p className="error">{relatedHistoryError}</p> : relatedHistoryLoading ? <p className="muted">Cargando historial…</p> : relatedHistory.length ? <><ul>{relatedHistory.map((entry) => <li key={String(entry.id)}>{entry.saleDate ? new Date(String(entry.saleDate)).toLocaleDateString('es-MX') : 'Fecha desconocida'} · {String(entry.status)} · {Number(entry.total ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</li>)}</ul><div className="pagination"><button type="button" disabled={relatedHistoryPage <= 1} onClick={() => setRelatedHistoryPage((page) => page - 1)}>Anterior</button><span>Página {relatedHistoryPage} de {relatedHistoryTotalPages}</span><button type="button" disabled={relatedHistoryPage >= relatedHistoryTotalPages} onClick={() => setRelatedHistoryPage((page) => page + 1)}>Siguiente</button></div></> : <p className="muted">No hay operaciones registradas para esta ficha.</p>}</section>}
+      {id && kind === 'suppliers' && <section className="user-history"><h3>Historial de compras al proveedor</h3>{!canReadPurchases ? <p className="muted">Tu rol no tiene permiso para consultar compras.</p> : relatedHistoryError ? <p className="error">{relatedHistoryError}</p> : relatedHistoryLoading ? <p className="muted">Cargando historial…</p> : relatedHistory.length ? <><ul>{relatedHistory.map((entry) => <li key={String(entry.id)}>{entry.purchaseDate ? new Date(String(entry.purchaseDate)).toLocaleDateString('es-MX') : 'Fecha desconocida'} · {String(entry.status)} · {Number(entry.total ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</li>)}</ul><div className="pagination"><button type="button" disabled={relatedHistoryPage <= 1} onClick={() => setRelatedHistoryPage((page) => page - 1)}>Anterior</button><span>Página {relatedHistoryPage} de {relatedHistoryTotalPages}</span><button type="button" disabled={relatedHistoryPage >= relatedHistoryTotalPages} onClick={() => setRelatedHistoryPage((page) => page + 1)}>Siguiente</button></div></> : <p className="muted">No hay operaciones registradas para esta ficha.</p>}</section>}
+      {kind === 'warehouses' && id && canReadInventory && <section className="user-history"><h3>Existencias en este almacén</h3>{warehouseStockError ? <p className="error">{warehouseStockError}</p> : warehouseStockLoading ? <p className="muted">Cargando existencias…</p> : warehouseStock.length ? <><div className="table-panel"><table><thead><tr><th>Producto</th><th>Existencia</th><th>Mínimo</th><th>Estado</th></tr></thead><tbody>{warehouseStock.map((stock, index) => { const quantity = Number(stock.quantity ?? 0); const availability = quantity <= 0 ? 'Agotado' : stock.lowStock === true ? 'Stock bajo' : 'Disponible'; return <tr key={String(stock.id ?? index)}><td>{String(stock.productName ?? stock.productSku ?? '—')}</td><td>{String(quantity)}</td><td>{String(stock.minStock ?? 0)}</td><td>{availability}</td></tr>; })}</tbody></table></div><div className="pagination"><button type="button" disabled={warehouseStockPage <= 1} onClick={() => setWarehouseStockPage((page) => page - 1)}>Anterior</button><span>Página {warehouseStockPage} de {warehouseStockTotalPages}</span><button type="button" disabled={warehouseStockPage >= warehouseStockTotalPages} onClick={() => setWarehouseStockPage((page) => page + 1)}>Siguiente</button></div></> : <p className="muted">Este almacén todavía no tiene existencias.</p>}</section>}
       {kind === 'branches' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} disabled={!canWrite} onChange={(event) => update('isActive', event.target.checked)} />Sucursal activa</label>}
       {kind === 'warehouses' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} disabled={!canWrite} onChange={(event) => update('isActive', event.target.checked)} />Almacén activo</label>}
       {kind === 'customers' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} disabled={!canWrite} onChange={(event) => update('isActive', event.target.checked)} />Cliente activo</label>}
       {kind === 'suppliers' && id && <label className="checkbox-label"><input type="checkbox" checked={values.isActive !== false} disabled={!canWrite} onChange={(event) => update('isActive', event.target.checked)} />Proveedor activo</label>}
-      <div className="form-actions"><Link className="secondary-button" to={`/${kind}`}>Volver</Link>{canWrite && kind === 'users' && id && <button type="button" disabled={saving} onClick={() => void toggleUser()}>{values.isActive === false ? 'Activar usuario' : 'Desactivar usuario'}</button>}{canWrite && kind === 'roles' && isSystemRole && <span className="muted">No puedes eliminar un rol del sistema.</span>}{canWrite && kind === 'roles' && id && !isSystemRole && <button type="button" disabled={saving || Number(values.userCount) > 0} onClick={() => void deleteRole()} title={Number(values.userCount) > 0 ? 'No se puede eliminar un rol asignado' : undefined}>Eliminar rol</button>}{canWrite ? <button className="primary" disabled={saving || (kind === 'roles' && (permissionCatalogLoading || !permissionCatalog.length))}>{saving ? 'Guardando…' : 'Guardar cambios'}</button> : <span className="muted">Modo de consulta</span>}</div>
+      <div className="form-actions"><Link className="secondary-button" to={canReadEntity ? `/${kind}` : getLandingPath(user?.permissions ?? [])}>Volver</Link>{canWrite && kind === 'users' && id && <button type="button" disabled={saving} onClick={() => void toggleUser()}>{values.isActive === false ? 'Activar usuario' : 'Desactivar usuario'}</button>}{canWrite && kind === 'roles' && isSystemRole && <span className="muted">No puedes eliminar un rol del sistema.</span>}{canWrite && kind === 'roles' && id && !isSystemRole && <button type="button" disabled={saving || Number(values.userCount) > 0} onClick={() => void deleteRole()} title={Number(values.userCount) > 0 ? 'No se puede eliminar un rol asignado' : undefined}>Eliminar rol</button>}{canWrite ? <button className="primary" disabled={saving || (kind === 'users' && !id && (rolesLoading || !roles.length)) || (kind === 'roles' && (permissionCatalogLoading || !permissionCatalog.length))}>{saving ? 'Guardando…' : 'Guardar cambios'}</button> : <span className="muted">Modo de consulta</span>}</div>
     </form>
   </div>;
 }

@@ -19,18 +19,18 @@ export interface ProductCreateInput {
 }
 
 export interface ProductFieldChanges {
-  code?: string;
+  code?: string | null;
   sku?: string;
   name?: string;
-  description?: string;
+  description?: string | null;
   categoryId?: string;
   purchasePrice?: number;
   salePrice?: number;
   taxes?: ProductTax[];
   unit?: string;
   isActive?: boolean;
-  image?: string;
-  barcode?: string;
+  image?: string | null;
+  barcode?: string | null;
 }
 
 export interface ProductListResult {

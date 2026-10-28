@@ -4,7 +4,7 @@ import { idSchema, paginationSchema } from './common.schema.js';
 
 /**
  * Alta de movimiento (M11). La cantidad mínima por tipo se valida en el service:
- * IN/OUT/TRANSFER/RETURN requieren ≥ 1; ADJUSTMENT admite 0 (recuento absoluto).
+ * IN/OUT/TRANSFER/RETURN requieren > 0; ADJUSTMENT admite 0 (recuento absoluto).
  * TRANSFER exige `toWarehouseId`; los demás tipos no lo admiten (refine).
  */
 export const createMovementSchema = z
@@ -36,6 +36,7 @@ export const updateStockSchema = z.object({
 export type UpdateStockInput = z.output<typeof updateStockSchema>;
 
 export const listStockQuerySchema = paginationSchema.extend({
+  branchId: idSchema.optional(),
   warehouseId: idSchema.optional(),
   productId: idSchema.optional(),
   availability: z.enum(['in_stock', 'out_of_stock', 'low']).optional(),
@@ -45,6 +46,7 @@ export const listStockQuerySchema = paginationSchema.extend({
 export type ListStockQueryInput = z.output<typeof listStockQuerySchema>;
 
 export const listMovementsQuerySchema = paginationSchema.extend({
+  branchId: idSchema.optional(),
   warehouseId: idSchema.optional(),
   productId: idSchema.optional(),
   type: z.enum(MOVEMENT_TYPES).optional(),
