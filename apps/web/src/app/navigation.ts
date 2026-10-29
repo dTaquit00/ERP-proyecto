@@ -1,3 +1,5 @@
+import { canAccessPath } from './access';
+
 const landingPages: Array<[string, string[]]> = [
   ['/dashboard', ['dashboard.read']], ['/products', ['products.read']], ['/sales', ['sales.read']],
   ['/purchases', ['purchases.read']], ['/inventory', ['inventory.read']], ['/customers', ['customers.read']],
@@ -19,5 +21,6 @@ export function getLandingPath(
   excludePath = typeof window === 'undefined' ? '' : window.location.pathname,
 ) {
   return landingPages.find(([path, required]) => path !== excludePath
+    && canAccessPath(path, (permission) => permissions.includes(permission))
     && required.every((permission) => permissions.includes(permission)))?.[0] ?? '/change-password';
 }

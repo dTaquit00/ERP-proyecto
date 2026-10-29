@@ -99,11 +99,11 @@ function customerFieldError(kind: EntityKind, key: string, value: string): strin
   return '';
 }
 
-export function EntityFormPage() {
-  const { resource, id } = useParams();
+export function EntityFormPage({ resource }: { resource: EntityKind }) {
+  const { id } = useParams();
   const navigate = useNavigate();
   const { can, user, logout } = useAuth();
-  const kind = (resource ?? '') as EntityKind;
+  const kind = resource;
   const isKnown = ['customers', 'suppliers', 'warehouses', 'branches', 'companies', 'users', 'roles'].includes(kind);
   const [values, setValues] = useState<Row>({ isActive: true, status: 'active', permissions: [] });
   const [branches, setBranches] = useState<Row[]>([]);

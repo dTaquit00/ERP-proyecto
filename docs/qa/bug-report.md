@@ -43,6 +43,25 @@ Estado: Abierto | En proceso | Resuelto | Verificado | Cerrado
 | CLI-001 | Clientes / teléfono y código postal | Media | P2 | En proceso | Los campos permitían datos sin formato. **Solución**: validación inmediata en formulario y validación de servidor; teléfono como cadena con 7–15 dígitos y código postal mexicano de 5 dígitos. |
 | CLI-002 | Clientes / rutas y formulario | Crítica | P1 | En proceso | La ruta genérica `/:resource/new` competía con `/:resource/:id`, por lo que `/customers/new` podía abrir el formulario de detalle con `id="new"` o el mensaje de módulo no disponible. **Solución**: rutas explícitas para alta y detalle de los recursos con formulario; agregar recorrido E2E de alta y consulta. |
 
+
+
+### BUG-007 — Formularios sin recurso en rutas explícitas
+
+- Módulos: Usuarios, Roles, Clientes, Proveedores, Almacenes, Sucursales y Empresas.
+- Severidad: crítica. Estado: corregido y verificado por regresión de rutas; E2E de navegador pendiente.
+- Causa: las rutas literales `/users/new` y equivalentes no definen un parámetro
+  `:resource`, pero `EntityFormPage` intentaba leerlo con `useParams()`.
+  El recurso quedaba vacío y se mostraba «Módulo no disponible».
+- Solución: pasar el recurso explícitamente como propiedad obligatoria y tipada
+  tanto en alta como en detalle. El ID sigue siendo un parámetro de ruta.
+- Verificación: 14 casos de renderizado de las rutas reales (alta y detalle de los
+  siete recursos), build web/API y suite de 375 pruebas de API/validación correctos.
+- E2E añadidos: apertura de altas, creación/consulta de contactos y administración,
+  creación de usuario y cambio de rol con comprobación de acceso. Chromium no pudo
+  descargarse por timeout; esos recorridos todavía no se han ejecutado.
+- También se actualizó la expectativa antigua del filtro de movimientos para
+  comprobar traslados por almacén de origen y de destino.
+
 ### Correcciones previas al cierre (sin ticket)
 
 - Filtro de permisos sin lógica real en `toAuthUserResponse` → ahora usa `isPermission`.

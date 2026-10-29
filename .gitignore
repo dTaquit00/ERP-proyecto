@@ -16,6 +16,7 @@ packages/*/src/**/*.d.ts
 
 # Entorno (nunca versionar credenciales reales)
 .env
+.local/
 .env.*
 !.env.example
 

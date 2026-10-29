@@ -8,6 +8,6 @@ import { dashboardService } from './dashboard.service.js';
 export const dashboardController = {
   summary: (async (req: Request, res: Response) => {
     const auth = requireAuth(req);
-    return sendOk(res, await dashboardService.summary(auth.user.companyId, parseOrThrow(dashboardQuerySchema, req.query)));
+    return sendOk(res, await dashboardService.summary(auth.user.companyId, parseOrThrow(dashboardQuerySchema, req.query), auth.permissions));
   }) satisfies RequestHandler,
 };

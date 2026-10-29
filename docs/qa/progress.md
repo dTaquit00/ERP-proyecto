@@ -31,7 +31,39 @@
 - `npm audit --audit-level=moderate`: 2 vulnerabilidades moderadas de Vitest; solución automática implica actualización mayor.
 - Playwright: configuración y smoke creados; ejecución local bloqueada por timeout al descargar Chromium.
 
-## Pendientes que no deben marcarse como terminados
+
+
+## Corrección de formularios — 29 de octubre de 2026
+
+- Corregido el recurso que reciben las rutas de alta y detalle de Usuarios, Roles,
+  Clientes, Proveedores, Almacenes, Sucursales y Empresas.
+- Verificación de rutas sin navegador: 14 casos correctos con el enrutador real.
+- Suite completa: 46 archivos y 389 pruebas correctas, incluyendo las 14 de rutas,
+  creación de usuarios, asignación de roles, permisos, compras, ventas e inventario.
+- Compilación API y web correctas. Lint sin errores (39 advertencias existentes en móvil).
+- Nuevos recorridos Playwright preparados para los formularios y usuarios/roles;
+  no ejecutados: descarga de Chromium agotó el tiempo de espera.
+- Conexión local a Atlas verificada con ping correcto tras usar la cadena estándar
+  con TLS y agregar la IP actual a la lista de acceso del proyecto.
+- Lote privado aplicado: cuatro cuentas nuevas activas con roles combinados y
+  cuenta administradora existente conservada. Asignaciones y hashes de las
+  contraseñas iniciales verificados. Datos personales y accesos solo en `.local/`,
+  excluida de Git. Correcciones web aún pendientes de despliegue.
+
+## Visibilidad por rol — 29 de octubre de 2026
+
+- Menú y acceso por URL protegidos antes de montar las pantallas.
+- Inicio de sesión dirigido a un módulo permitido.
+- Dashboard web y respuesta API limitados a los módulos autorizados.
+- Reportes y exportaciones CSV/PDF exigen lectura del módulo además del permiso
+  de reportes. El selector solo ofrece reportes autorizados.
+- Pruebas de permisos de los siete roles base y las cuatro combinaciones del equipo,
+  con datos temporales y sin alterar las cuentas reales.
+- Verificación final: 48 archivos y 428 pruebas correctas; compilación API y web
+  correcta, TypeScript correcto y lint sin errores (39 advertencias existentes en móvil).
+- Cambios pendientes de despliegue de web y API para aplicarse en el sitio público.
+
+## Pendientes generales
 
 - Navegación y flujos de negocio móviles.
 - E2E de negocio venta/compra/inventario/auditoría/aislamiento.

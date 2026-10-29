@@ -50,7 +50,9 @@ describe('buildMovementFilter', () => {
       COMPANY,
       movementQuery({ warehouseId: WAREHOUSE, productId: PRODUCT, type: 'TRANSFER' }),
     );
-    expect(filter.warehouseId?.toString()).toBe(WAREHOUSE);
+    expect(filter.$or).toHaveLength(2);
+    expect(filter.$or?.[0]?.warehouseId?.toString()).toBe(WAREHOUSE);
+    expect(filter.$or?.[1]?.toWarehouseId?.toString()).toBe(WAREHOUSE);
     expect(filter.productId?.toString()).toBe(PRODUCT);
     expect(filter.type).toBe('TRANSFER');
   });

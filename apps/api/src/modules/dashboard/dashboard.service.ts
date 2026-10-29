@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import type { DashboardQueryInput } from '@erp/validation';
+import type { Permission } from '@erp/types';
 import { SaleModel } from '../sales/sales.model.js';
 import { PurchaseModel } from '../purchases/purchases.model.js';
 import { CustomerModel } from '../customers/customers.model.js';
@@ -46,7 +47,7 @@ function monthStart(date: Date): Date {
 }
 
 export const dashboardService = {
-  async summary(companyId: string, query: DashboardQueryInput) {
+  async summary(companyId: string, query: DashboardQueryInput, permissions: readonly Permission[]) {
     const company = new Types.ObjectId(companyId);
     const saleScope: Record<string, unknown> = { companyId: company, status: { $in: ['confirmed', 'returned'] } };
     const purchaseScope: Record<string, unknown> = { companyId: company, status: { $ne: 'cancelled' } };
@@ -98,7 +99,7 @@ export const dashboardService = {
       PurchaseModel.find(purchaseScope).sort({ purchaseDate: -1 }).limit(5).select('id supplierName total status purchaseDate').lean().exec(),
       InventoryMovementModel.find(movementScope).sort({ createdAt: -1 }).limit(5).select('id type productName quantity createdAt').lean().exec(),
     ]);
-    return {
+    const summary = {
       ventasHoy: salesToday[0]?.total ?? 0,
       ventasMes: salesMonth[0]?.total ?? 0,
       comprasMes: purchasesMonth[0]?.total ?? 0,
@@ -112,5 +113,15 @@ export const dashboardService = {
       comprasRecientes: recentPurchases,
       movimientosRecientes: recentMovements,
     };
+    const required: Record<keyof typeof summary, Permission[]> = {
+      ventasHoy: ['sales.read'], ventasMes: ['sales.read'], ventasRecientes: ['sales.read'],
+      comprasMes: ['purchases.read'], comprasRecientes: ['purchases.read'],
+      clientesActivos: ['customers.read'], proveedoresActivos: ['suppliers.read'],
+      productosActivos: ['products.read'], stockBajo: ['inventory.read'],
+      productosAgotados: ['inventory.read'], movimientosRecientes: ['inventory.read'],
+      inventarioValorizado: ['inventory.read', 'purchases.read'],
+    };
+    return Object.fromEntries(Object.entries(summary).filter(([key]) =>
+      required[key as keyof typeof summary].every((permission) => permissions.includes(permission))));
   },
 };

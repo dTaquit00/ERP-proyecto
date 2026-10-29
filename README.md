@@ -135,6 +135,26 @@ npm run dev:api    # API en http://localhost:3000/api/v1 (modo watch)
 
 El seed imprime una contraseña aleatoria si `SEED_ADMIN_PASSWORD` está vacío.
 
+### Altas de usuarios con roles combinados
+
+`apps/api/src/scripts/provision-users.ts` recibe un JSON con `firstName`,
+`lastName`, `email` y `roles` (claves de los roles del sistema). Usa la empresa de
+`SEED_COMPANY_NAME` y exige que `SEED_ADMIN_EMAIL` sea su administrador activo.
+Primero consultar el plan; agregar `--apply` para aplicarlo:
+
+```bash
+npx tsx apps/api/src/scripts/provision-users.ts .local/users-to-provision.json
+npx tsx apps/api/src/scripts/provision-users.ts .local/users-to-provision.json --apply
+```
+
+Crear `.local/` antes de aplicar. Esta carpeta está excluida de Git. El script
+crea roles personalizados con la unión de los permisos solicitados, reutiliza
+roles equivalentes, actualiza cuentas existentes sin cambiar contraseñas y
+protege las cuentas administradoras contra sustituciones accidentales. Para
+cuentas nuevas genera accesos aleatorios en `.local/users-initial-access.json`
+y verifica el hash guardado. Entregar esos accesos por un canal privado y pedir
+que se cambien al iniciar sesión. El script no envía correos.
+
 ## Pruebas
 
 ```bash
@@ -207,6 +227,14 @@ Colecciones: `users`, `roles`, `companies`, `sessions`, `password_reset_tokens`
 Detalle y justificación de cada relación en `docs/architecture/database.md`.
 
 ## Seguridad
+
+La web muestra menús, formularios e indicadores según los permisos del usuario y
+bloquea rutas directas no autorizadas. Los roles combinados reúnen los permisos
+de sus funciones. Auditor tiene consulta amplia sin permisos de escritura;
+Administrador mantiene acceso completo. Los reportes requieren tanto el permiso
+de consulta/exportación como el de lectura del módulo correspondiente. El
+dashboard de la API omite campos de módulos no autorizados; la valoración del
+inventario exige lectura de inventario y compras.
 
 - Contraseñas con **scrypt** (nunca texto plano), JWT HS256 de corta duración.
 - Refresh token opaco guardado **solo como SHA-256**, rotado en cada uso, en cookie
