@@ -29,6 +29,18 @@ Estado: Abierto | En proceso | Resuelto | Verificado | Cerrado
 
 ## Registro
 
+### BUG-008 — Cloudflare compila pruebas sin Vitest instalado
+
+- Fecha: 4 de noviembre de 2026. Estado: corregido y verificado localmente.
+- El despliegue del commit `e7df2de` falló porque el tsconfig de la web incluía
+  los archivos `src/**/*.test.ts`. Cloudflare instala `apps/web` por separado,
+  mientras que Vitest es una dependencia de desarrollo del monorepo raíz.
+- Solución: excluir archivos `.test.ts`, `.test.tsx`, `.spec.ts` y `.spec.tsx`
+  del proyecto TypeScript de producción. Vitest conserva su configuración y
+  sigue ejecutando las pruebas desde el monorepo.
+- Validación: build web correcto, lista de archivos TypeScript sin pruebas ni
+  Vitest y 29 pruebas web correctas. Despliegue remoto pendiente de confirmación.
+
 | ID | Módulo | Severidad | Prioridad | Estado | Resumen |
 |---|---|---|---|---|---|
 | BUG-001 | Rate limit (pruebas) | Baja | P3 | Resuelto | La app de prueba del rate limit no montaba `errorHandler`: el 429 salía en formato HTML por defecto en lugar de `{error:{code,message}}`. **Solución**: montar el `errorHandler` real en la app del test. **Prueba**: `rate-limit.test.ts` → 429 `RATE_LIMITED` con formato estándar ✅ |
