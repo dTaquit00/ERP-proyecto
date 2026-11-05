@@ -19,3 +19,4 @@ export * from './purchase.schema.js';
 export * from './audit.schema.js';
 export * from './dashboard.schema.js';
 export * from './report.schema.js';
+export * from './gym.schema.js';

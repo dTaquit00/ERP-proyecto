@@ -3,6 +3,11 @@
 ERP web y móvil para centralizar la administración de usuarios, roles y permisos, clientes,
 proveedores, productos, inventarios, ventas, compras, dashboard, reportes y auditoría.
 
+La adaptación a **Gym OMH** agrega socios, membresías e inscripciones, con vigencias
+calculadas en servidor y vínculo de los socios con Clientes para registrar ventas.
+El alcance implementado y los incrementos pendientes de asesoramientos y página
+pública se detallan en [Gym OMH](docs/requirements/gym-omh.md).
+
 Construido con **TypeScript estricto** en todo el stack:
 
 | Capa | Tecnología |

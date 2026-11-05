@@ -29,6 +29,12 @@ async function findScopedOr404(companyId: string, id: string): Promise<RoleDocum
 }
 
 export const rolesService = {
+  /** Los módulos nuevos quedan disponibles inicialmente solo para administradores. */
+  async ensureGymAdminPermissions(): Promise<void> {
+    for (const permission of ['members.read', 'members.write', 'memberships.read', 'memberships.write', 'enrollments.read', 'enrollments.write'] as const) {
+      await rolesRepository.addPermissionToSystemRoles(['administrador'], permission);
+    }
+  },
   /** Migración aditiva para que vendedor/compras puedan seleccionar almacén. */
   async ensureOperationalWarehouseRead(): Promise<void> {
     const modified = await rolesRepository.addPermissionToSystemRoles(['vendedor', 'compras'], 'warehouses.read');
@@ -42,7 +48,7 @@ export const rolesService = {
       if (existing) {
         // Migración aditiva de permisos nuevos al volver a ejecutar el seed;
         // conserva cualquier permiso personalizado que ya tuviera el rol.
-        const newSystemPermissions: Permission[] = ['sales.confirm', 'purchases.confirm', 'inventory.adjust', 'warehouses.read'];
+        const newSystemPermissions: Permission[] = ['sales.confirm', 'purchases.confirm', 'inventory.adjust', 'warehouses.read', 'members.read', 'members.write', 'memberships.read', 'memberships.write', 'enrollments.read', 'enrollments.write'];
         const additions: Permission[] = systemRole.permissions.filter(
           (permission) => newSystemPermissions.includes(permission) && !existing.permissions.includes(permission),
         );

@@ -3,10 +3,13 @@ import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { connectDatabase, disconnectDatabase } from './db/mongoose.js';
 import { rolesService } from './modules/roles/roles.service.js';
+import { gymService } from './modules/gym/gym.service.js';
 
 async function main(): Promise<void> {
   await connectDatabase();
   await rolesService.ensureOperationalWarehouseRead();
+  await rolesService.ensureGymAdminPermissions();
+  await gymService.initialize();
 
   const app = createApp();
   const server = app.listen(env.PORT, () => {

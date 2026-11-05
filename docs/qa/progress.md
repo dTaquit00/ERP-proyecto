@@ -18,6 +18,9 @@
 | M14 Dashboard | Sí | Indicadores y ventas/compras/movimientos recientes reales | Dashboard | No | Parcial | No | Sí | Sí | Integrado web; falta E2E |
 | M15 Reports | CSV/PDF | Selección de tipo, formato y filtros por reporte, incluida sucursal para inventario/movimientos | No | No | Parcial | No | Límite/injection | Sí | Integrado web; falta E2E |
 | M16 Audit | Sí | Listado, filtros y detalle de eventos | No | No | Parcial | No | Redacción base | Sí | Integrado web; falta E2E |
+| M17 Socios Gym OMH | Sí | Alta, búsqueda, edición y baja lógica; cliente vinculado | No | Validación | Sí | Pendiente | RBAC + multiempresa | Sí | Primera etapa; pendiente despliegue |
+| M18 Membresías Gym OMH | Sí | Planes, duración en días, precio y disponibilidad | No | Validación | Sí | Pendiente | RBAC + multiempresa | Sí | Primera etapa; pendiente despliegue |
+| M19 Inscripciones Gym OMH | Sí | Alta, consulta, vigencia e historial/cancelación | No | Validación | Sí | Pendiente | Transacciones + bloqueo de solapamientos | Sí | Primera etapa; pendiente despliegue |
 
 ## Verificación actual
 
@@ -64,6 +67,25 @@
 - Cambios pendientes de despliegue de web y API para aplicarse en el sitio público.
 
 ## Pendientes generales
+
+## Adaptación Gym OMH — 4 de noviembre de 2026
+
+- Confirmado conservar TypeScript y MongoDB; los documentos son referencias de
+  dominio y los archivos PHP no se ejecutan ni se importan a la aplicación.
+- Nuevos módulos: socios vinculados a Clientes, catálogo de membresías e
+  inscripciones con vigencia, saldo registrado, historial y cancelación.
+- API con permisos independientes, aislamiento multiempresa e índices únicos.
+  La creación de socio/cliente y de inscripciones es transaccional; se evitan
+  periodos solapados incluso con solicitudes concurrentes.
+- Página pública, portal del socio y asesoramientos siguen pendientes. El diseño
+  y la separación de esas superficies están en `docs/requirements/gym-omh.md`.
+- No se cargaron datos de prueba ni se cambiaron usuarios reales en Atlas.
+- Verificación: 51 archivos y 452 pruebas correctas con
+  `npm test -- --maxWorkers=2`; se limitaron los procesos porque el arranque
+  simultáneo de varias réplicas temporales agotaba el límite de 10 segundos.
+- Despliegue de API y web y pruebas completas en navegador pendientes.
+
+## Otros pendientes generales
 
 - Navegación y flujos de negocio móviles.
 - E2E de negocio venta/compra/inventario/auditoría/aislamiento.

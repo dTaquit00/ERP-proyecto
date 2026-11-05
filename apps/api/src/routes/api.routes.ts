@@ -16,6 +16,7 @@ import { purchasesRoutes } from '../modules/purchases/purchases.routes.js';
 import { auditRoutes } from '../modules/audit/audit.routes.js';
 import { dashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
 import { reportsRoutes } from '../modules/reports/reports.routes.js';
+import { gymRoutes } from '../modules/gym/gym.routes.js';
 
 /** Router maestro bajo /api/v1 — aquí se montarán los módulos por fase. */
 export const apiRouter = Router();
@@ -37,3 +38,4 @@ apiRouter.use('/purchases', purchasesRoutes);
 apiRouter.use('/audit-logs', auditRoutes);
 apiRouter.use('/dashboard', dashboardRoutes);
 apiRouter.use('/reports', reportsRoutes);
+apiRouter.use('/gym', gymRoutes);

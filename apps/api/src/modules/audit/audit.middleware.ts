@@ -6,6 +6,7 @@ function businessAction(method: string, resource: string, tail: string[], body: 
     products: 'PRODUCT', categories: 'CATEGORY', customers: 'CUSTOMER', suppliers: 'SUPPLIER',
     warehouses: 'WAREHOUSE', branches: 'BRANCH', users: 'USER', roles: 'ROLE', companies: 'COMPANY',
     sales: 'SALE', purchases: 'PURCHASE',
+    'gym-members': 'GYM_MEMBER', 'gym-plans': 'GYM_PLAN', 'gym-enrollments': 'GYM_ENROLLMENT',
   };
   if (resource === 'inventory' && method === 'POST' && tail[0] === 'movements') {
     const type = (body as { type?: string } | undefined)?.type;
@@ -42,8 +43,10 @@ export const auditRequestMiddleware: RequestHandler = (req, res, next) => {
     if (!auth || req.path.startsWith('/auth')) return;
     const segments = req.originalUrl.split('?')[0]!.split('/').filter(Boolean);
     const resourceIndex = segments[0] === 'api' && segments[1] === 'v1' ? 2 : 0;
-    const resource = segments[resourceIndex] ?? 'unknown';
-    const tail = segments.slice(resourceIndex + 1);
+    const rootResource = segments[resourceIndex] ?? 'unknown';
+    const gymResource = rootResource === 'gym' && ['members', 'plans', 'enrollments'].includes(segments[resourceIndex + 1] ?? '');
+    const resource = gymResource ? `gym-${segments[resourceIndex + 1]}` : rootResource;
+    const tail = segments.slice(resourceIndex + (gymResource ? 2 : 1));
     const candidateId = tail[0];
     const resourceId = candidateId && !['confirm', 'receive', 'cancel', 'return', 'activate', 'deactivate', 'movements'].includes(candidateId) ? candidateId : undefined;
     const action = businessAction(req.method, resource, tail, req.body);

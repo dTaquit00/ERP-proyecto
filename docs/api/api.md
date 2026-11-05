@@ -373,7 +373,33 @@ POST /api/v1/sales
 
 ---
 
-## Endpoints previstos (por fase)
+## Gym OMH — primera etapa
+
+Todas las rutas requieren autenticación y se limitan a la empresa de la sesión.
+
+| Método | Ruta | Permiso |
+|---|---|---|
+| GET | `/gym/members`, `/gym/members/:id` | `members.read` |
+| POST | `/gym/members` | `members.write` |
+| PATCH | `/gym/members/:id` | `members.write` |
+| GET | `/gym/plans`, `/gym/plans/:id` | `memberships.read` |
+| POST | `/gym/plans` | `memberships.write` |
+| PATCH | `/gym/plans/:id` | `memberships.write` |
+| GET | `/gym/enrollments`, `/gym/enrollments/:id` | `enrollments.read` |
+| POST | `/gym/enrollments`, `/gym/enrollments/:id/cancel` | `enrollments.write` |
+
+Los listados admiten `page`/`limit`. Socios y planes admiten `search` y
+`status=active|inactive`. Inscripciones admite `memberId` y
+`status=scheduled|active|expired|cancelled`.
+
+La inscripción recibe `memberId`, `planId`, `startDate` (`YYYY-MM-DD`), `amountPaid`
+opcional y `notes`. El servidor calcula la fecha final inclusiva y conserva el
+precio y duración del plan vigente al registrar. `GYM_ENROLLMENT_OVERLAP` (409)
+impide periodos solapados; `GYM_INACTIVE_REFERENCE` y `GYM_INVALID_PAYMENT` (400)
+identifican referencias inactivas o importes superiores al precio. Cancelar no
+borra el historial ni registra un reembolso. Este módulo no realiza cobros en línea.
+
+## Otros endpoints previstos (por fase)
 
 ```
 GET|POST            /purchases            (Fase 12)

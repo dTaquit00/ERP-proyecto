@@ -9,6 +9,7 @@ type EntityKind = 'customers' | 'suppliers' | 'warehouses' | 'branches' | 'compa
 type Field = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'number' | 'url' | 'password' | 'textarea' | 'select'; required?: boolean; minLength?: number; maxLength?: number; pattern?: string; title?: string; inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search'; options?: Array<{ value: string; label: string }> };
 
 const permissionGroupTitles: Record<string, string> = {
+  members: 'Gym OMH', memberships: 'Gym OMH', enrollments: 'Gym OMH',
   users: 'Usuarios y roles', roles: 'Usuarios y roles',
   companies: 'Empresas y sucursales', branches: 'Empresas y sucursales',
   categories: 'Catálogo', products: 'Catálogo',
@@ -29,6 +30,7 @@ function groupPermissions(permissions: string[]): Array<{ title: string; values:
 }
 
 const permissionGroupOrder = [
+  'Gym OMH',
   'Usuarios y roles', 'Empresas y sucursales', 'Catálogo', 'Contactos',
   'Almacén e inventario', 'Ventas', 'Compras', 'Reportes y auditoría', 'Otros permisos',
 ];

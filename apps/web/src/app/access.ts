@@ -20,6 +20,13 @@ export function canAccessPath(path: string, can: Can): boolean {
   const parts = path.split('/').filter(Boolean);
   const resource = parts[0];
   if (!resource || resource === 'change-password') return true;
+  if (resource === 'gym') {
+    const prefixes: Record<string, string> = { members: 'members', plans: 'memberships', enrollments: 'enrollments' };
+    const prefix = prefixes[parts[1] ?? ''];
+    if (!prefix) return false;
+    if (parts[2] === 'new') return can(`${prefix}.write`) && (prefix !== 'enrollments' || (can('members.read') && can('memberships.read')));
+    return can(`${prefix}.read`);
+  }
   if (resource === 'reports') return availableReports(can).length > 0;
   if (resource === 'dashboard') return can('dashboard.read');
   if (resource === 'audit') return can('audit.read');

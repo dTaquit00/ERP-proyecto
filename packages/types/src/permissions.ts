@@ -51,6 +51,13 @@ export const PERMISSIONS = [
   // Configuración
   'settings.read',
   'settings.write',
+  // Gym OMH: socios, planes e inscripciones (sin datos clínicos).
+  'members.read',
+  'members.write',
+  'memberships.read',
+  'memberships.write',
+  'enrollments.read',
+  'enrollments.write',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
