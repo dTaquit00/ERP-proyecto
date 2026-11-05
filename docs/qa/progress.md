@@ -102,6 +102,22 @@
 
 ## Pendientes generales restantes
 
+## Altas y publicación desde ERP — 4 de noviembre de 2026
+
+- Puesta en marcha en `/gym/setup`: activación de tienda y guía de productos,
+  socios, cuentas, membresías e inscripciones según permisos.
+- Alta de socio dirigida a su ficha para crear el acceso; enlace a inscripción
+  con el socio preseleccionado. Usuarios diferencia cuentas del personal.
+- Productos indica su marca de publicación; catálogo con actualización manual y
+  al volver a la pestaña. Respuestas del portal y catálogo sin caché compartida.
+- Verificados mediante endpoints reales de la aplicación: creación y publicación
+  de producto, edición y retirada del catálogo; creación de socio, acceso, plan
+  e inscripción y consulta de 15 días restantes con su nuevo inicio de sesión.
+- Suite: 55 archivos y 477 pruebas correctas con dos procesos; pruebas sobre
+  bases temporales. La configuración real de tienda no se cambia durante pruebas.
+
+## Otros pendientes
+
 - Navegación y flujos de negocio móviles.
 - E2E de negocio venta/compra/inventario/auditoría/aislamiento.
 - Streaming de exportaciones grandes.

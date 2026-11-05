@@ -8,6 +8,13 @@ import { UserModel } from '../users/users.model.js';
 import { escapeRegExp } from '../../shared/utils/regex.js';
 
 export const portalRepository = {
+  companySettings: (companyId: string) => CompanyModel.findById(companyId).select('status settings'),
+  otherPublicStore: (companyId: string) => CompanyModel.exists({ _id: { $ne: companyId }, status: 'active', 'settings.publicStoreEnabled': true }),
+  setStoreEnabled: (companyId: string, enabled: boolean) => CompanyModel.updateOne({ _id: companyId }, { $set: { 'settings.publicStoreEnabled': enabled } }),
+  productCounts: async (companyId: string) => {
+    const [products, published] = await Promise.all([ProductModel.countDocuments({ companyId }), ProductModel.countDocuments({ companyId, isActive: true, isPublic: true })]);
+    return { products, published };
+  },
   publicCompanies: () => CompanyModel.find({ status: 'active', 'settings.publicStoreEnabled': true }).select('_id').limit(2).lean(),
   async catalog(companyId: string, query: { page: number; limit: number; search?: string }) {
     const filter = { companyId, isActive: true, isPublic: true, ...(query.search ? { name: new RegExp(escapeRegExp(query.search), 'i') } : {}) };

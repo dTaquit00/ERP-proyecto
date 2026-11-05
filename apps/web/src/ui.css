@@ -169,6 +169,7 @@ td a:hover { text-decoration: underline; }
 .product-thumbnail-fallback { display: inline-flex; width: 48px; height: 48px; align-items: center; justify-content: center; padding: 4px; border: 1px dashed var(--line); border-radius: 7px; color: var(--muted); background: #f8f8fc; font-size: 8px; text-align: center; }
 .field-error { color: #b42318; font-size: 10px; line-height: 1.4; }
 .module-actions.gym-tabs { margin-bottom: 22px; max-width: none; flex-wrap: wrap; }
+.gym-setup-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:25px 0}.gym-setup-grid .panel p{line-height:1.8}.gym-setup-grid .form-actions{flex-wrap:wrap;margin-top:20px}@media(max-width:900px){.gym-setup-grid{grid-template-columns:1fr}}
 @media (max-width: 760px) { .sale-line, .report-filters { grid-template-columns: 1fr; } }
 
 @media (min-width: 1500px) { .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

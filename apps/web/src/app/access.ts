@@ -22,6 +22,7 @@ export function canAccessPath(path: string, can: Can): boolean {
   if (!resource || resource === 'change-password') return true;
   if (resource === 'mi-cuenta') return can('portal.read');
   if (resource === 'gym') {
+    if (parts[1] === 'setup') return ['products.write', 'members.write', 'users.write', 'memberships.write', 'enrollments.write', 'companies.write'].some(can);
     const prefixes: Record<string, string> = { members: 'members', plans: 'memberships', enrollments: 'enrollments' };
     const prefix = prefixes[parts[1] ?? ''];
     if (!prefix) return false;

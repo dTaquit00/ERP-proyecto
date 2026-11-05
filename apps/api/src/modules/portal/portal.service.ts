@@ -5,6 +5,21 @@ import { gymRepository, gymToday } from '../gym/gym.repository.js';
 import { portalRepository } from './portal.repository.js';
 
 export const portalService = {
+  async storeSettings(companyId: string) {
+    const company = await portalRepository.companySettings(companyId);
+    if (!company) throw new NotFoundError('Empresa no encontrada');
+    const [counts, conflict] = await Promise.all([portalRepository.productCounts(companyId), portalRepository.otherPublicStore(companyId)]);
+    const enabled = company.settings?.publicStoreEnabled === true;
+    return { enabled, ready: enabled && company.status === 'active' && !conflict, companyActive: company.status === 'active', conflictingStore: Boolean(conflict), ...counts };
+  },
+  async updateStoreSettings(companyId: string, enabled: boolean) {
+    const company = await portalRepository.companySettings(companyId);
+    if (!company) throw new NotFoundError('Empresa no encontrada');
+    if (enabled && company.status !== 'active') throw new BadRequestError('La empresa debe estar activa para habilitar la tienda');
+    if (enabled && await portalRepository.otherPublicStore(companyId)) throw new ConflictError('Ya hay otra empresa con tienda habilitada. Revisa la configuración antes de publicar.', 'STORE_ALREADY_ENABLED');
+    await portalRepository.setStoreEnabled(companyId, enabled);
+    return this.storeSettings(companyId);
+  },
   async catalog(query: { page: number; limit: number; search?: string }) {
     const companies = await portalRepository.publicCompanies();
     if (companies.length !== 1) return { enabled: false, items: [], meta: { ...query, total: 0, totalPages: 1 } };

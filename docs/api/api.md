@@ -401,6 +401,12 @@ borra el historial ni registra un reembolso. Este módulo no realiza cobros en l
 
 ## Tienda pública y portal
 
+- `GET /store/settings`: requiere `products.read`; devuelve el estado de la tienda
+  de la empresa autenticada y sus conteos de productos.
+- `PATCH /store/settings`: requiere `products.read` + `companies.write`; cuerpo
+  `{enabled:boolean}`. No acepta selección de otra empresa desde el navegador y
+  devuelve 409 `STORE_ALREADY_ENABLED` si otra empresa activa tiene tienda.
+
 - `GET /public/store/products?page=1&limit=12&search=`: catálogo anónimo de una
   única empresa habilitada; solo productos activos con `isPublic=true`.
 - `GET /portal/me`: requiere `portal.read`; utiliza exclusivamente la identidad

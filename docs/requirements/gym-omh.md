@@ -63,6 +63,12 @@ entran a `/mi-cuenta`, mientras que el personal conserva su página administrati
 
 ### Publicación del catálogo
 
+En el ERP, **Puesta en marcha** (`/gym/setup`) reúne el estado de la tienda,
+el conteo de productos y los accesos a altas de productos, socios, planes,
+inscripciones y personal. El botón **Habilitar tienda** requiere `companies.write`
+y consulta de productos. Conserva los otros ajustes de la empresa y rechaza
+habilitar una segunda empresa activa con tienda.
+
 1. En Empresa, activar **Habilitar esta empresa como tienda pública Gym OMH** y guardar.
 2. Activar esa opción en una sola empresa. Si ninguna o varias están habilitadas,
    el catálogo público permanece vacío para evitar mezclar datos de empresas.
@@ -75,6 +81,10 @@ nombre de categoría. No entrega costos, existencias internas, proveedores ni
 identificadores de empresa. La selección de empresa no se toma del navegador.
 La compra y el cobro se confirman en recepción; no hay carrito, pasarela ni cobros
 en línea en esta etapa.
+
+La tienda vuelve a consultar el catálogo al recuperar el foco y ofrece
+**Actualizar catálogo**, para ver los cambios hechos desde otra pestaña del ERP.
+El listado de Productos diferencia los marcados para tienda y los de uso interno.
 
 ### Acceso de socios
 
@@ -93,6 +103,11 @@ de America/Mexico_City; las inscripciones vencidas o canceladas tienen cero día
 
 La cuenta puede cambiar su contraseña desde el flujo existente. No se agrega
 registro público libre: recepción verifica la ficha antes de crear el acceso.
+
+Al registrar al socio, el ERP abre su ficha para continuar con el acceso. Una vez
+creado, **Asignar membresía a este socio** abre la inscripción con el socio
+preseleccionado. Las cuentas del personal se crean desde Usuarios; en ese alta
+no se ofrece el rol exclusivo de socio, para evitar cuentas sin ficha vinculada.
 
 ## Siguientes incrementos pendientes
 

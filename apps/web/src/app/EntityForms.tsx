@@ -174,7 +174,7 @@ export function EntityFormPage({ resource }: { resource: EntityKind }) {
     if (kind === 'users' && canReadRoles) {
       setRolesLoading(true);
       apiListAll<Row>('/roles')
-        .then((result) => { if (active) setRoles(result.items ?? []); })
+        .then((result) => { if (active) setRoles((result.items ?? []).filter((role) => Boolean(id) || !Array.isArray(role.permissions) || !(role.permissions.length === 1 && role.permissions[0] === 'portal.read'))); })
         .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudieron cargar los roles'); })
         .finally(() => { if (active) setRolesLoading(false); });
     }
@@ -304,7 +304,7 @@ export function EntityFormPage({ resource }: { resource: EntityKind }) {
     <h2>{id ? `${canWrite ? 'Editar' : 'Consultar'} ${title}` : kind === 'companies' ? 'Nueva empresa' : `Nuevo ${title}`}</h2>
     <p className="muted">{kind === 'companies' && !id ? 'La creación está reservada al administrador de plataforma; la API verificará tu cuenta al guardar.' : canWrite ? 'Los cambios se guardan en la empresa de tu sesión.' : 'Vista de consulta. Tu rol no puede modificar este registro.'}</p>
     {error && <p className="error">{error}</p>}
-    {!id && kind === 'users' && rolesLoading && <p className="muted" role="status">Cargando roles disponibles…</p>}{!id && kind === 'users' && canReadRoles && !rolesLoading && !roles.length && <p className="error">No hay roles disponibles para asignar. Crea un rol antes de registrar usuarios.</p>}
+    {!id && kind === 'users' && can('members.write') && <p className="muted">Para dar acceso privado a un socio y vincularlo a su membresía, usa <Link to="/gym/members/new">Registrar socio</Link>. Aquí se crean las cuentas del personal.</p>}{!id && kind === 'users' && rolesLoading && <p className="muted" role="status">Cargando roles disponibles…</p>}{!id && kind === 'users' && canReadRoles && !rolesLoading && !roles.length && <p className="error">No hay roles disponibles para asignar. Crea un rol antes de registrar usuarios.</p>}
     <form className="product-form entity-form" onSubmit={(event) => void submit(event)}>
       {fields.map((field) => <label key={field.key}>{field.label}
         {field.key === 'roleId' && !canReadRoles ? <input value={String(values.roleName ?? values.roleId ?? 'Sin rol')} disabled />
