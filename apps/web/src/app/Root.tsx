@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AuthProvider, useAuth, useResource } from '../auth/AuthProvider';
-import { apiListAll, apiRequest, downloadReport } from '../services/api';
+import { ApiError, apiListAll, apiRequest, downloadReport } from '../services/api';
 import { EntityFormPage } from './EntityForms';
 import { getLandingPath } from './navigation';
 import { availableReports, canAccessPath } from './access';
@@ -33,7 +33,68 @@ const resources: Record<string, { label: string; endpoint: string; permission: s
   products: { label: 'Productos', endpoint: '/products', permission: 'products.read', searchable: true }, categories: { label: 'Categorías', endpoint: '/categories', permission: 'categories.read', searchable: true }, customers: { label: 'Clientes', endpoint: '/customers', permission: 'customers.read', searchable: true }, suppliers: { label: 'Proveedores', endpoint: '/suppliers', permission: 'suppliers.read', searchable: true }, warehouses: { label: 'Almacenes', endpoint: '/warehouses', permission: 'warehouses.read', searchable: true }, branches: { label: 'Sucursales', endpoint: '/branches', permission: 'branches.read', searchable: true }, companies: { label: 'Empresa', endpoint: '/companies', permission: 'companies.read' }, sales: { label: 'Ventas', endpoint: '/sales', permission: 'sales.read', searchable: true }, purchases: { label: 'Compras', endpoint: '/purchases', permission: 'purchases.read' }, inventory: { label: 'Existencias', endpoint: '/inventory/stock', permission: 'inventory.read' }, users: { label: 'Usuarios', endpoint: '/users', permission: 'users.read', searchable: true }, roles: { label: 'Roles', endpoint: '/roles', permission: 'roles.read' }, audit: { label: 'Auditoría', endpoint: '/audit-logs', permission: 'audit.read' },
 };
 
-function LoginPage() { const { login, user, loading: authLoading } = useAuth(); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [companyId, setCompanyId] = useState(''); const [error, setError] = useState(''); const [submitting, setSubmitting] = useState(false); const navigate = useNavigate(); async function submit(event: React.FormEvent) { event.preventDefault(); if (submitting) return; setError(''); setSubmitting(true); try { const authenticatedUser = await login(email, password, companyId || undefined); navigate(getLandingPath(authenticatedUser.permissions, ''), { replace: true }); } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo iniciar sesión'); } finally { setSubmitting(false); } } if (authLoading) return <div className="loading" role="status">Verificando sesión…</div>; if (user) return <Navigate to={getLandingPath(user.permissions, '')} replace />; return <main className="login-shell login-welcome"><section className="auth-story" aria-label="Bienvenido a Gym OMH"><Link to="/tienda" className="auth-story-back">← Volver a la tienda</Link><div><p className="auth-kicker">GYM OMH · TU ESPACIO</p><h2>Tu esfuerzo.<br />Tu siguiente <em>nivel.</em></h2><p>Entrena, crece y sigue avanzando. Todo lo que necesitas, en un mismo lugar.</p></div><div className="auth-story-footer"><span>FUERZA · CONSTANCIA · COMUNIDAD</span><span aria-hidden="true">↗</span></div></section><form className="login-card" onSubmit={submit}><Link className="auth-brand" to="/tienda" aria-label="Gym OMH, volver a la tienda"><span className="gym-brand">OMH<span>.</span><small>GYM & NUTRICIÓN</small></span></Link><p className="auth-kicker">BIENVENIDO DE NUEVO</p><h1>Tu próximo paso<br />empieza aquí.</h1><p className="muted">Accede a tu membresía o al panel del gimnasio según tu cuenta.</p><label>Correo<input type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Contraseña<input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label><label>Empresa (opcional)<input value={companyId} onChange={(event) => setCompanyId(event.target.value)} placeholder="ID de empresa, si tu correo está en varias" /></label>{submitting && <p className="muted" role="status">Conectando con la API… La primera solicitud puede tardar mientras el servicio se activa.</p>}{error && <p className="error" role="alert">{error}</p>}<button className="primary" disabled={submitting}>{submitting ? 'Conectando…' : 'Iniciar sesión'}</button><Link className="auth-link" to="/tienda">Volver a la tienda Gym OMH</Link><Link className="auth-link" to="/forgot-password">¿Olvidaste tu contraseña?</Link></form></main>; }
+function LoginPage() {
+  const { login, user, loading: authLoading } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [companyId, setCompanyId] = useState('');
+  const [companyRequired, setCompanyRequired] = useState(false);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (submitting) return;
+    setError('');
+    setSubmitting(true);
+    try {
+      const authenticatedUser = await login(email.trim(), password, companyRequired ? companyId.trim() : undefined);
+      navigate(getLandingPath(authenticatedUser.permissions, ''), { replace: true });
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.code === 'COMPANY_REQUIRED') setCompanyRequired(true);
+      setError(reason instanceof Error ? reason.message : 'No se pudo iniciar sesión');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (authLoading) return <div className="loading" role="status">Verificando sesión…</div>;
+  if (user) return <Navigate to={getLandingPath(user.permissions, '')} replace />;
+  return (
+    <main className="login-shell login-welcome">
+      <section className="auth-story" aria-label="Bienvenido a Gym OMH"><Link to="/tienda" className="auth-story-back">← Volver a la tienda</Link><div><p className="auth-kicker">GYM OMH · TU ESPACIO</p><h2>Tu esfuerzo.<br />Tu siguiente <em>nivel.</em></h2><p>Entrena, crece y sigue avanzando. Todo lo que necesitas, en un mismo lugar.</p></div><div className="auth-story-footer"><span>FUERZA · CONSTANCIA · COMUNIDAD</span><span aria-hidden="true">↗</span></div></section>
+      <form className="login-card" onSubmit={submit}>
+        <Link className="auth-brand" to="/tienda" aria-label="Gym OMH, volver a la tienda"><span className="gym-brand">OMH<span>.</span><small>GYM & NUTRICIÓN</small></span></Link>
+        <p className="auth-kicker">BIENVENIDO DE NUEVO</p>
+        <h1>Tu próximo paso<br />empieza aquí.</h1>
+        <p className="muted">Accede a tu membresía o al panel del gimnasio según tu cuenta.</p>
+        <label>Correo
+          <input type="email" autoComplete="username" value={email} required onChange={(event) => {
+            setEmail(event.target.value);
+            setCompanyRequired(false);
+            setCompanyId('');
+            setError('');
+          }} />
+        </label>
+        <label htmlFor="login-password">Contraseña</label>
+        <div className="login-password-field">
+          <input id="login-password" type={passwordVisible ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+          <button type="button" aria-controls="login-password" aria-label={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setPasswordVisible((visible) => !visible)}>
+            {passwordVisible ? 'Ocultar' : 'Mostrar'}
+          </button>
+        </div>
+        {companyRequired && <label>ID de empresa<input value={companyId} onChange={(event) => setCompanyId(event.target.value)} required /></label>}
+        {submitting && <p className="muted" role="status">Conectando con la API… La primera solicitud puede tardar mientras el servicio se activa.</p>}
+        {error && <p className="error" role="alert">{error}</p>}
+        <button className="primary" disabled={submitting}>{submitting ? 'Conectando…' : 'Iniciar sesión'}</button>
+        <Link className="auth-link" to="/tienda">Volver a la tienda Gym OMH</Link>
+        <Link className="auth-link" to="/forgot-password">¿Olvidaste tu contraseña?</Link>
+      </form>
+    </main>
+  );
+}
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');

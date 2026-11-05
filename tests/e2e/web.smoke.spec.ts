@@ -5,7 +5,7 @@ const password = 'E2e-Only-Passw0rd!';
 async function signIn(page: Page, role: string): Promise<void> {
   await page.goto('/login');
   await page.getByLabel('Correo').fill(`${role}@e2e.local`);
-  await page.getByLabel('Contraseña').fill(password);
+  await page.getByLabel('Contraseña', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
   await expect(page.getByRole('heading', { name: 'Resumen operativo' })).toBeVisible();
 }
@@ -23,7 +23,15 @@ test('E2E-002 valida campos obligatorios de login', async ({ page }) => {
   await page.goto('/login');
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
   await expect(page.getByLabel('Correo')).toHaveAttribute('required', '');
-  await expect(page.getByLabel('Contraseña')).toHaveAttribute('required', '');
+  const passwordInput = page.getByLabel('Contraseña', { exact: true });
+  await expect(passwordInput).toHaveAttribute('required', '');
+  await expect(page.getByLabel('ID de empresa')).toHaveCount(0);
+  await passwordInput.fill(password);
+  await page.getByRole('button', { name: 'Mostrar contraseña' }).click();
+  await expect(passwordInput).toHaveAttribute('type', 'text');
+  await page.getByRole('button', { name: 'Ocultar contraseña' }).click();
+  await expect(passwordInput).toHaveAttribute('type', 'password');
+  await expect(passwordInput).toHaveValue(password);
 });
 
 test('E2E-005 protege rutas privadas y no muestra login a una sesión activa', async ({ page }) => {

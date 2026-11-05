@@ -29,6 +29,19 @@
 .login-card label { color: #354139; }
 .login-card input { border-color: #d7ddd4; border-radius: 6px; }
 .login-card input:focus { border-color: #6b8a13; box-shadow: 0 0 0 3px #d7fa6355; }
+.login-password-field { display: flex; gap: 8px; margin-top: 8px; }
+.login-password-field input { min-width: 0; }
+.login-password-field button {
+  padding: 0 14px;
+  border: 1px solid #d7ddd4;
+  border-radius: 6px;
+  background: #fff;
+  color: #36563c;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.login-password-field button:hover { background: #eef3e5; }
 .login-shell .primary, .app-shell .primary { border-radius: 6px; background: #141a18; color: #fff; }
 .login-shell .primary:hover, .app-shell .primary:hover { background: #2e4534; filter: none; transform: none; }
 .login-shell .auth-link { color: #36563c; }

@@ -5,6 +5,12 @@ let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 let onAuthenticationExpired: (() => void) | null = null;
 
+export class ApiError extends Error {
+  constructor(message: string, readonly code?: string) {
+    super(message);
+  }
+}
+
 export function setAccessToken(token: string | null): void { accessToken = token; }
 export function setAuthenticationExpiredHandler(handler: (() => void) | null): void { onAuthenticationExpired = handler; }
 
@@ -24,7 +30,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retry 
   const headers = new Headers(init.headers);
   headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-  const response = await fetch(`${API_URL}${path}`, { ...init, headers, credentials: 'include' });
+  const response = await fetch(`${API_URL}${path}`, { ...init, headers, credentials: 'include' }).catch(() => {
+    throw new ApiError('No pudimos conectar con el servidor. Vuelve a intentarlo.');
+  });
   if (response.status === 401 && retry && !path.startsWith('/auth/')) {
     const token = await refresh();
     if (token) return apiRequest<T>(path, init, false);
@@ -33,8 +41,20 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retry 
     accessToken = null;
     onAuthenticationExpired?.();
   }
-  const body = await response.json().catch(() => ({})) as { data?: T; error?: { message?: string } };
-  if (!response.ok) throw new Error(body.error?.message ?? 'No se pudo completar la solicitud');
+  const body = await response.json().catch(() => null) as { data?: T; error?: { message?: string; code?: string } } | null;
+  if (response.status === 429) {
+    const wakingUp = response.headers.get('x-render-routing') === 'hibernate-rate-limited';
+    throw new ApiError(wakingUp
+      ? 'El servidor aún no está disponible. Espera unos minutos antes de iniciar sesión.'
+      : 'Demasiadas solicitudes. Espera unos minutos antes de volver a intentarlo.');
+  }
+  if (!response.ok) {
+    const fallback = response.status >= 500
+      ? 'El servidor no está disponible en este momento. Vuelve a intentarlo en unos minutos.'
+      : 'No se pudo completar la solicitud';
+    throw new ApiError(body?.error?.message ?? fallback, body?.error?.code);
+  }
+  if (!body) throw new ApiError('El servidor devolvió una respuesta inesperada. Vuelve a intentarlo.');
   return body.data as T;
 }
 
