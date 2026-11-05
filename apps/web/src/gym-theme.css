@@ -1,0 +1,102 @@
+/* Shared identity with the public Gym OMH store. Scoped to administrative/auth screens. */
+.app-shell, .login-shell {
+  --ink: #141a18;
+  --night: #141a18;
+  --night-soft: #202c26;
+  --violet: #36563c;
+  --magenta: #d7fa63;
+  --gold: #d7fa63;
+  --paper: #fff;
+  --canvas: #f6f5f0;
+  --surface: #fff;
+  --ink-soft: #526058;
+  --muted: #65706a;
+  --line: #e1e1d8;
+  --green: #39744d;
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  background: var(--canvas);
+}
+.app-shell :is(h1,h2,h3,.big-number,.metric > strong,.metric-icon,.sale-estimate strong),
+.login-shell :is(h1,h2) { font-family: Arial, Helvetica, sans-serif; }
+.gym-brand { display: inline-block; color: inherit; font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -3px; }
+.gym-brand > span { color: #85a635; }
+.gym-brand small { display: block; margin-top: 9px; font-size: 9px; font-weight: 700; letter-spacing: 2.2px; }
+.auth-brand { display: inline-block; margin-bottom: 36px; color: #141a18; text-decoration: none; }
+.login-shell { padding: 40px 24px; background: #f6f5f0; }
+.login-card { border-color: #e1e1d8; border-radius: 12px; background: #fff; box-shadow: 0 16px 60px #141a1808; }
+.login-card h1 { color: #141a18; font-size: clamp(30px,3vw,42px); letter-spacing: -1.5px; }
+.login-card label { color: #354139; }
+.login-card input { border-color: #d7ddd4; border-radius: 6px; }
+.login-card input:focus { border-color: #6b8a13; box-shadow: 0 0 0 3px #d7fa6355; }
+.login-shell .primary, .app-shell .primary { border-radius: 6px; background: #141a18; color: #fff; }
+.login-shell .primary:hover, .app-shell .primary:hover { background: #2e4534; filter: none; transform: none; }
+.login-shell .auth-link { color: #36563c; }
+.login-welcome { grid-template-columns: minmax(0,1.05fr) minmax(420px,1fr); gap: 0; align-items: stretch; padding: 0; }
+.login-welcome .login-card { width: min(100%,500px); align-self: center; justify-self: center; margin: 44px 0; padding: 42px 48px; border: 0; background: transparent; box-shadow: none; }
+.auth-kicker { margin: 0 0 15px; color: #65706a; font-size: 10px; font-weight: 700; letter-spacing: 1.8px; }
+.auth-story { position: relative; display: flex; min-height: 100vh; flex-direction: column; justify-content: space-between; overflow: hidden; padding: 44px clamp(28px,5vw,80px); background: #141a18; color: #f6f5f0; }
+.auth-story::after { position: absolute; right: -180px; bottom: -240px; width: 600px; height: 600px; border: 1px solid #d7fa6330; border-radius: 50%; box-shadow: 0 0 0 70px #d7fa6306,0 0 0 140px #d7fa6305; content: ''; pointer-events: none; }
+.auth-story > * { position: relative; z-index: 1; }
+.auth-story-back { align-self: flex-start; color: #f6f5f0; font-size: 13px; text-decoration: none; }
+.auth-story .auth-kicker { color: #d7fa63; }
+.auth-story h2 { color: #f6f5f0; font-size: clamp(44px,5.5vw,80px); font-weight: 800; line-height: 1.03; letter-spacing: -3.5px; }
+.auth-story h2 em { color: #d7fa63; font-style: normal; }
+.auth-story h2 + p { max-width: 320px; margin-top: 28px; color: #b8c1b9; font-size: 15px; line-height: 1.8; }
+.auth-story-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 36px; padding-top: 20px; border-top: 1px solid #ffffff25; font-size: 9px; letter-spacing: 1.4px; }
+.auth-story-footer > span:last-child { color: #d7fa63; font-size: 28px; }
+.app-shell .sidebar { padding-top: 30px; background: #141a18; color: #f6f5f0; }
+.app-shell .side-brand { margin: 0 12px 30px; overflow: visible; color: #f6f5f0; text-decoration: none; }
+.app-shell .gym-brand > span { color: #d7fa63; }
+.app-shell .workspace-label { color: #a6b3a7; }
+.app-shell .workspace-dot { background: #d7fa63; box-shadow: none; }
+.app-shell .nav-caption { color: #90a092; }
+.app-shell .sidebar nav a { color: #c3cec4; font-size: 13px; }
+.app-shell .sidebar nav a.active { background: #d7fa63; color: #141a18; font-weight: 700; }
+.app-shell .sidebar nav a.active::before { display: none; }
+.app-shell .account-avatar { background: #2e4032; color: #d7fa63; }
+.app-shell .account-copy strong { color: #f6f5f0; }
+.app-shell .account-copy span { color: #a6b3a7; }
+.app-shell .logout-button { color: #d7fa63; }
+.app-shell .topbar { background: #f6f5f0f5; }
+.app-shell .topbar-actions > a { color: #36563c; font-size: 12px; }
+.app-shell .breadcrumb span { color: #65706a; }
+.app-shell .panel, .app-shell .metric { border-radius: 10px; box-shadow: none; }
+.app-shell .eyebrow { color: #65706a; }
+.app-shell .metric { --metric-color: #527239; }
+.app-shell .metric-top, .app-shell .metric > small { color: #65706a; }
+.app-shell .metric > strong { color: #141a18; }
+.app-shell :is(.record-count,.empty-icon,.sale-estimate,.accent) { border-color: #dce5cf; background: #f0f4e7; color: #36563c; }
+.app-shell :is(input,select,textarea):focus-visible { outline: 2px solid #6b8a13; outline-offset: 2px; }
+.app-shell :is(a,button):focus-visible, .login-shell :is(a,button):focus-visible { outline: 3px solid #85a635; outline-offset: 3px; }
+@media (max-width: 900px) {
+  .login-welcome { grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); }
+  .login-welcome .login-card { padding: 36px 28px; }
+  .auth-story { padding: 32px 28px; }
+  .auth-story h2 { font-size: 48px; }
+}
+@media (max-width: 760px) {
+  .login-welcome { display: block; }
+  .auth-story { min-height: auto; padding: 24px; gap: 32px; }
+  .auth-story h2 { font-size: 40px; letter-spacing: -2px; }
+  .auth-story h2 + p, .auth-story-footer { display: none; }
+  .login-welcome .login-card { margin: 0 auto; padding: 32px 24px; }
+  .login-welcome .auth-brand { margin-bottom: 24px; }
+  .app-shell { display: block; }
+  .app-shell .sidebar { position: static; width: 100%; height: auto; padding: 20px 16px 12px; }
+  .app-shell .side-brand { display: inline-block; margin: 0 0 18px; }
+  .app-shell .gym-brand { font-size: 32px; }
+  .app-shell .gym-brand small { font-size: 8px; }
+  .app-shell .workspace-label { display: none; }
+  .app-shell .sidebar nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
+  .app-shell .nav-caption { display: none; }
+  .app-shell .sidebar nav a { flex: 0 0 auto; min-height: 38px; padding: 9px 13px; font-size: 12px; white-space: nowrap; }
+  .app-shell .sidebar nav a::after { display: none; }
+  .app-shell .sidebar-account { justify-content: flex-start; flex-wrap: nowrap; padding: 10px 0 0; }
+  .app-shell .account-copy, .app-shell .logout-button { display: block; }
+  .app-shell .account-copy strong, .app-shell .account-copy span { display: block; max-width: 240px; }
+  .app-shell .topbar { position: static; height: auto; min-height: 60px; flex-wrap: wrap; gap: 12px; padding: 14px 16px; }
+  .app-shell .topbar-actions { flex-wrap: wrap; gap: 12px; }
+  .app-shell .user-chip { display: none; }
+  .app-shell .module-actions { max-width: 100%; }
+}

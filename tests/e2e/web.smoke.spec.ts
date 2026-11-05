@@ -14,8 +14,8 @@ test('E2E-001 muestra la tienda pública y permite abrir el login', async ({ pag
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Tu esfuerzo/ })).toBeVisible();
   await page.getByRole('link', { name: /Iniciar sesión/ }).click();
-  await expect(page.getByRole('heading', { name: 'Tu operación, en foco.' })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'DATA ERP' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tu próximo paso empieza aquí.' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Gym OMH, volver a la tienda' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible();
 });
 
@@ -29,7 +29,7 @@ test('E2E-002 valida campos obligatorios de login', async ({ page }) => {
 test('E2E-005 protege rutas privadas y no muestra login a una sesión activa', async ({ page }) => {
   await page.goto('/customers/new');
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole('heading', { name: 'Tu operación, en foco.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Tu próximo paso empieza aquí.' })).toBeVisible();
 
   await signIn(page, 'administrador');
   await page.goto('/login');
