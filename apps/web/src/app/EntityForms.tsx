@@ -9,6 +9,7 @@ type EntityKind = 'customers' | 'suppliers' | 'warehouses' | 'branches' | 'compa
 type Field = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'number' | 'url' | 'password' | 'textarea' | 'select'; required?: boolean; minLength?: number; maxLength?: number; pattern?: string; title?: string; inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search'; options?: Array<{ value: string; label: string }> };
 
 const permissionGroupTitles: Record<string, string> = {
+  portal: 'Acceso de socios',
   members: 'Gym OMH', memberships: 'Gym OMH', enrollments: 'Gym OMH',
   users: 'Usuarios y roles', roles: 'Usuarios y roles',
   companies: 'Empresas y sucursales', branches: 'Empresas y sucursales',
@@ -30,6 +31,7 @@ function groupPermissions(permissions: string[]): Array<{ title: string; values:
 }
 
 const permissionGroupOrder = [
+  'Acceso de socios',
   'Gym OMH',
   'Usuarios y roles', 'Empresas y sucursales', 'Catálogo', 'Contactos',
   'Almacén e inventario', 'Ventas', 'Compras', 'Reportes y auditoría', 'Otros permisos',
@@ -87,6 +89,11 @@ function setNested(target: Row, path: string, value: unknown) {
 function readValue(data: Row, path: string): string {
   const value = path.split('.').reduce<unknown>((current, part) => current && typeof current === 'object' ? (current as Row)[part] : undefined, data);
   return value == null ? '' : String(value);
+}
+
+function publicStoreSettings(value: unknown): Row {
+  try { const parsed: unknown = JSON.parse(String(value || '{}')); return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Row : {}; }
+  catch { return {}; }
 }
 
 function customerFieldError(kind: EntityKind, key: string, value: string): string {
@@ -309,6 +316,7 @@ export function EntityFormPage({ resource }: { resource: EntityKind }) {
           : <input type={field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : field.type === 'password' ? 'password' : field.type === 'number' ? 'number' : field.type === 'url' ? 'url' : 'text'} minLength={field.minLength} maxLength={field.maxLength ?? 254} pattern={field.pattern} title={field.title} inputMode={field.inputMode} required={field.required} aria-invalid={Boolean(customerFieldError(kind, field.key, readValue(values, field.key)))} disabled={!canWrite || Boolean(kind === 'roles' && id && field.key === 'name')} value={readValue(values, field.key)} onChange={(event) => update(field.key, event.target.value)} />}
         {customerFieldError(kind, field.key, readValue(values, field.key)) && <small className="field-error" role="status">{customerFieldError(kind, field.key, readValue(values, field.key))}</small>}
       </label>)}
+      {kind === 'companies' && <label className="checkbox-label"><input type="checkbox" disabled={!canWrite} checked={publicStoreSettings(values.settingsJson).publicStoreEnabled === true} onChange={(event) => { try { const settings = JSON.parse(String(values.settingsJson || '{}')) as Row; if (!settings || typeof settings !== 'object' || Array.isArray(settings)) throw new Error(); update('settingsJson', JSON.stringify({ ...settings, publicStoreEnabled: event.target.checked }, null, 2)); } catch { setError('Corrige el JSON de configuración antes de activar la tienda.'); } }} />Habilitar esta empresa como tienda pública Gym OMH (activa solo una empresa)</label>}
       {kind === 'roles' && <fieldset className="permission-grid"><legend>Permisos del rol</legend>{!canWrite ? roleFields.length ? <ul>{roleFields.map((permission) => <li key={permission}>{permission}</li>)}</ul> : <p className="muted">Este rol no tiene permisos asignados.</p> : permissionCatalogLoading ? <p className="muted">Cargando permisos disponibles…</p> : permissionCatalog.length ? groupPermissions(permissionCatalog).sort((a, b) => permissionGroupOrder.indexOf(a.title) - permissionGroupOrder.indexOf(b.title)).map((group) => <section key={group.title}><h3>{group.title}</h3>{group.values.map((permission) => <label className="checkbox-label" key={permission}><input type="checkbox" checked={roleFields.includes(permission)} onChange={(event) => update('permissions', event.target.checked ? [...roleFields, permission] : roleFields.filter((value) => value !== permission))} />{permission}</label>)}</section>) : <p className="error">El catálogo de permisos no está disponible; no guardes cambios hasta poder cargarlo.</p>}</fieldset>}
       {kind === 'users' && id && <section className="user-history"><h3>Historial de acceso</h3>{userHistoryError ? <p className="error">{userHistoryError}</p> : userHistory ? <><p>Cuenta creada: {userHistory.createdAt ? new Date(String(userHistory.createdAt)).toLocaleString('es-MX') : '—'}</p><p>Último inicio de sesión: {userHistory.lastLoginAt ? new Date(String(userHistory.lastLoginAt)).toLocaleString('es-MX') : 'Sin registros'}</p><p>Contraseña cambiada: {userHistory.passwordChangedAt ? new Date(String(userHistory.passwordChangedAt)).toLocaleString('es-MX') : '—'}</p><h4>Sesiones</h4>{((userHistory.sessions as Row[]) ?? []).length ? <ul>{((userHistory.sessions as Row[]) ?? []).map((session, index) => <li key={String(session.id ?? index)}>{session.active ? 'Activa' : session.revokedAt ? 'Revocada' : 'Expirada'} · último uso {session.lastUsedAt ? new Date(String(session.lastUsedAt)).toLocaleString('es-MX') : '—'} · vence {session.expiresAt ? new Date(String(session.expiresAt)).toLocaleString('es-MX') : '—'}</li>)}</ul> : <p className="muted">No hay sesiones para mostrar.</p>}{can('users.write') && ((userHistory.sessions as Row[]) ?? []).some((session) => session.active) && <button type="button" disabled={saving} onClick={() => void revokeUserSessions()}>{saving ? 'Cerrando sesiones…' : 'Cerrar todas las sesiones activas'}</button>}</> : <p className="muted">Cargando historial de acceso…</p>}</section>}
       {id && kind === 'customers' && <section className="user-history"><h3>Historial de ventas del cliente</h3>{!canReadSales ? <p className="muted">Tu rol no tiene permiso para consultar ventas.</p> : relatedHistoryError ? <p className="error">{relatedHistoryError}</p> : relatedHistoryLoading ? <p className="muted">Cargando historial…</p> : relatedHistory.length ? <><ul>{relatedHistory.map((entry) => <li key={String(entry.id)}>{entry.saleDate ? new Date(String(entry.saleDate)).toLocaleDateString('es-MX') : 'Fecha desconocida'} · {String(entry.status)} · {Number(entry.total ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</li>)}</ul><div className="pagination"><button type="button" disabled={relatedHistoryPage <= 1} onClick={() => setRelatedHistoryPage((page) => page - 1)}>Anterior</button><span>Página {relatedHistoryPage} de {relatedHistoryTotalPages}</span><button type="button" disabled={relatedHistoryPage >= relatedHistoryTotalPages} onClick={() => setRelatedHistoryPage((page) => page + 1)}>Siguiente</button></div></> : <p className="muted">No hay operaciones registradas para esta ficha.</p>}</section>}

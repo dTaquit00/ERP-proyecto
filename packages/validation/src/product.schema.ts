@@ -38,6 +38,7 @@ const productFields = {
   taxes: z.array(productTaxSchema).max(10).default([]),
   unit: z.enum(PRODUCT_UNITS, { error: 'Selecciona una unidad de medida válida' }),
   isActive: z.boolean().default(true),
+  isPublic: z.boolean().default(false),
   image: z.string().trim().max(500).url('La imagen debe ser una URL válida').optional(),
   barcode: z.string().trim().max(60).optional(),
 };
@@ -63,6 +64,7 @@ export const updateProductSchema = z
     taxes: z.array(productTaxSchema).max(10).optional(),
     unit: productFields.unit.optional(),
     isActive: z.boolean().optional(),
+    isPublic: z.boolean().optional(),
     image: z.preprocess(
       (value) => typeof value === 'string' && value.trim() === '' ? null : value,
       z.string().trim().max(500).url('La imagen debe ser una URL válida').nullable().optional(),

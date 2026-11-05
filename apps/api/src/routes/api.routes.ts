@@ -17,6 +17,7 @@ import { auditRoutes } from '../modules/audit/audit.routes.js';
 import { dashboardRoutes } from '../modules/dashboard/dashboard.routes.js';
 import { reportsRoutes } from '../modules/reports/reports.routes.js';
 import { gymRoutes } from '../modules/gym/gym.routes.js';
+import { publicStoreRoutes, portalRoutes, memberAccountRoutes } from '../modules/portal/portal.routes.js';
 
 /** Router maestro bajo /api/v1 — aquí se montarán los módulos por fase. */
 export const apiRouter = Router();
@@ -39,3 +40,6 @@ apiRouter.use('/audit-logs', auditRoutes);
 apiRouter.use('/dashboard', dashboardRoutes);
 apiRouter.use('/reports', reportsRoutes);
 apiRouter.use('/gym', gymRoutes);
+apiRouter.use('/gym/members', memberAccountRoutes);
+apiRouter.use('/public/store', publicStoreRoutes);
+apiRouter.use('/portal', portalRoutes);

@@ -8,7 +8,7 @@ import type { GymMemberDocument, MembershipPlanDocument, EnrollmentDocument } fr
 function required<T>(value: T | null, label: string): T { if (!value) throw new NotFoundError(`${label} no encontrado`); return value; }
 function validateName(value: { firstName: string; lastName: string }) { if (`${value.firstName} ${value.lastName}`.length > 120) throw new BadRequestError('El nombre completo del socio no puede superar 120 caracteres'); }
 function memberResponse(member: GymMemberDocument) {
-  return { id: member.id, customerId: member.customerId.toString(), memberNumber: member.memberNumber, firstName: member.firstName, lastName: member.lastName, name: `${member.firstName} ${member.lastName}`, email: member.email, phone: member.phone, notes: member.notes, isActive: member.isActive, createdAt: member.createdAt, updatedAt: member.updatedAt };
+  return { id: member.id, customerId: member.customerId.toString(), hasAccount: Boolean(member.userId), memberNumber: member.memberNumber, firstName: member.firstName, lastName: member.lastName, name: `${member.firstName} ${member.lastName}`, email: member.email, phone: member.phone, notes: member.notes, isActive: member.isActive, createdAt: member.createdAt, updatedAt: member.updatedAt };
 }
 function planResponse(plan: MembershipPlanDocument) { return { id: plan.id, name: plan.name, description: plan.description, durationDays: plan.durationDays, price: plan.price, isActive: plan.isActive, createdAt: plan.createdAt, updatedAt: plan.updatedAt }; }
 function enrollmentResponse(item: EnrollmentDocument) {

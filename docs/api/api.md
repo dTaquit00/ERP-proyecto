@@ -399,6 +399,20 @@ impide periodos solapados; `GYM_INACTIVE_REFERENCE` y `GYM_INVALID_PAYMENT` (400
 identifican referencias inactivas o importes superiores al precio. Cancelar no
 borra el historial ni registra un reembolso. Este módulo no realiza cobros en línea.
 
+## Tienda pública y portal
+
+- `GET /public/store/products?page=1&limit=12&search=`: catálogo anónimo de una
+  única empresa habilitada; solo productos activos con `isPublic=true`.
+- `GET /portal/me`: requiere `portal.read`; utiliza exclusivamente la identidad
+  autenticada y devuelve la membresía e historial de su socio vinculado.
+- `POST /gym/members/:id/account`: requiere `members.write` + `users.write`;
+  cuerpo `{email,password}`. Crea el usuario restringido y su vínculo en una
+  transacción; respuesta `{email,linked:true}`, sin contraseña.
+
+Las cuentas de socio no reciben `members.read`, `enrollments.read`, permisos de
+reportes ni otros permisos administrativos. Esos permisos no son necesarios para
+consultar su propia membresía.
+
 ## Otros endpoints previstos (por fase)
 
 ```

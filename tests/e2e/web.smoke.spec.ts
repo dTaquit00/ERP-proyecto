@@ -10,15 +10,17 @@ async function signIn(page: Page, role: string): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Resumen operativo' })).toBeVisible();
 }
 
-test('E2E-001 muestra el login DATA ERP', async ({ page }) => {
+test('E2E-001 muestra la tienda pública y permite abrir el login', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Tu esfuerzo/ })).toBeVisible();
+  await page.getByRole('link', { name: /Iniciar sesión/ }).click();
   await expect(page.getByRole('heading', { name: 'Tu operación, en foco.' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'DATA ERP' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible();
 });
 
 test('E2E-002 valida campos obligatorios de login', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/login');
   await page.getByRole('button', { name: 'Iniciar sesión' }).click();
   await expect(page.getByLabel('Correo')).toHaveAttribute('required', '');
   await expect(page.getByLabel('Contraseña')).toHaveAttribute('required', '');

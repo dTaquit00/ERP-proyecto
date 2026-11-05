@@ -39,6 +39,7 @@ export function toProductSummary(
     ),
     unit: product.unit,
     isActive: product.isActive,
+    isPublic: product.isPublic === true,
     image: product.image ?? null,
     barcode: product.barcode ?? null,
     createdAt: product.createdAt ? product.createdAt.toISOString() : null,

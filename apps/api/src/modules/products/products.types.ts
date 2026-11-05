@@ -14,6 +14,7 @@ export interface ProductCreateInput {
   taxes: ProductTax[];
   unit: string;
   isActive: boolean;
+  isPublic?: boolean;
   image?: string;
   barcode?: string;
 }
@@ -29,6 +30,7 @@ export interface ProductFieldChanges {
   taxes?: ProductTax[];
   unit?: string;
   isActive?: boolean;
+  isPublic?: boolean;
   image?: string | null;
   barcode?: string | null;
 }

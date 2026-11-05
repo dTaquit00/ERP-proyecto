@@ -19,6 +19,7 @@ const productSchema = new Schema(
     },
     unit: { type: String, required: true, trim: true, maxlength: 20 },
     isActive: { type: Boolean, required: true, default: true },
+    isPublic: { type: Boolean, required: true, default: false },
     image: { type: String, trim: true, maxlength: 500 },
     barcode: { type: String, trim: true, maxlength: 60 },
     // Declarados para tiparlos; los gestiona mongoose gracias a `timestamps: true`.

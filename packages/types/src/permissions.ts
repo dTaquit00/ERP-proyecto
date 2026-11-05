@@ -58,6 +58,7 @@ export const PERMISSIONS = [
   'memberships.write',
   'enrollments.read',
   'enrollments.write',
+  'portal.read',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

@@ -22,6 +22,7 @@ export interface ProductResponse {
   taxes: ProductTax[];
   unit: string;
   isActive: boolean;
+  isPublic?: boolean;
   image: string | null;
   barcode: string | null;
   createdAt: string | null;

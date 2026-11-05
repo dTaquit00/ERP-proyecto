@@ -6,6 +6,7 @@ const landingPages: Array<[string, string[]]> = [
   ['/suppliers', ['suppliers.read']], ['/warehouses', ['warehouses.read']], ['/categories', ['categories.read']],
   ['/branches', ['branches.read']], ['/companies', ['companies.read']], ['/reports', ['reports.read']], ['/reports', ['reports.export']],
   ['/users', ['users.read']], ['/roles', ['roles.read']], ['/audit', ['audit.read']],
+  ['/mi-cuenta', ['portal.read']],
   ['/gym/members', ['members.read']], ['/gym/plans', ['memberships.read']], ['/gym/enrollments', ['enrollments.read']],
   ['/gym/members/new', ['members.write']], ['/gym/plans/new', ['memberships.write']],
   ['/gym/enrollments/new', ['enrollments.write', 'members.read', 'memberships.read']],

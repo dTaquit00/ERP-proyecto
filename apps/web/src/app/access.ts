@@ -20,6 +20,7 @@ export function canAccessPath(path: string, can: Can): boolean {
   const parts = path.split('/').filter(Boolean);
   const resource = parts[0];
   if (!resource || resource === 'change-password') return true;
+  if (resource === 'mi-cuenta') return can('portal.read');
   if (resource === 'gym') {
     const prefixes: Record<string, string> = { members: 'members', plans: 'memberships', enrollments: 'enrollments' };
     const prefix = prefixes[parts[1] ?? ''];

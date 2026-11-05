@@ -55,11 +55,50 @@ Las rutas web `/gym/members`, `/gym/plans` y `/gym/enrollments` están protegida
 por los mismos permisos. Toda consulta API está limitada a la empresa de la sesión.
 La nueva etapa requiere desplegar la API y la web juntas.
 
+## Tienda y portal de socios
+
+La ruta `/` y `/tienda` presentan Gym OMH y su catálogo sin iniciar sesión.
+`/login` conserva el acceso compartido; las cuentas con solo `portal.read`
+entran a `/mi-cuenta`, mientras que el personal conserva su página administrativa.
+
+### Publicación del catálogo
+
+1. En Empresa, activar **Habilitar esta empresa como tienda pública Gym OMH** y guardar.
+2. Activar esa opción en una sola empresa. Si ninguna o varias están habilitadas,
+   el catálogo público permanece vacío para evitar mezclar datos de empresas.
+3. En Productos, marcar **Visible en la tienda pública de Gym OMH** en los
+   productos que se desean publicar y guardar. Los demás siguen privados.
+
+El endpoint `/api/v1/public/store/products` devuelve únicamente ID, nombre,
+descripción, precio público con los impuestos configurados, imagen, unidad y
+nombre de categoría. No entrega costos, existencias internas, proveedores ni
+identificadores de empresa. La selección de empresa no se toma del navegador.
+La compra y el cobro se confirman en recepción; no hay carrito, pasarela ni cobros
+en línea en esta etapa.
+
+### Acceso de socios
+
+Desde la ficha de un socio activo, el administrador puede usar **Crear acceso del
+socio** con correo y contraseña inicial. Requiere `members.write` y `users.write`.
+La API crea el usuario y su vínculo en una transacción, con un rol personalizado
+`socio` limitado a `portal.read`. No reutiliza cuentas administrativas ni cambia
+contraseñas de usuarios existentes. No envía contraseñas por correo automáticamente.
+
+`/api/v1/portal/me` resuelve al socio por empresa y usuario autenticados, no por
+un ID suministrado desde el navegador. Devuelve su membresía actual, días restantes
+(incluido el día actual), próxima inscripción e historial. Excluye notas internas,
+otros socios y datos administrativos. Una ficha inactiva conserva el historial,
+pero se presenta sin membresía habilitada. Los días se calculan usando la fecha
+de America/Mexico_City; las inscripciones vencidas o canceladas tienen cero días.
+
+La cuenta puede cambiar su contraseña desde el flujo existente. No se agrega
+registro público libre: recepción verifica la ficha antes de crear el acceso.
+
 ## Siguientes incrementos pendientes
 
 - Entrenadores, asignación de asesoramientos y seguimiento con alcance por socio.
-- Portal del socio con acceso exclusivamente a su ficha y asesoramientos.
-- Sitio público Gym OMH con contenido real validado, servicios, actividades y catálogo.
+- Asesoramientos dentro del portal del socio.
+- Contenido público ampliado de servicios y actividades, validado con el gimnasio.
 - Configuración de horarios, domicilio, contactos, logotipo y fotografías propias.
 - Indicadores y reportes específicos del gimnasio.
 - Pruebas de navegación completa en navegador, accesibilidad y validación con el gimnasio.

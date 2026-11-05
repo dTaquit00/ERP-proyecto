@@ -87,6 +87,21 @@
 
 ## Otros pendientes generales
 
+## Tienda pública y cuenta del socio — 4 de noviembre de 2026
+
+- Portada Gym OMH y catálogo público en `/` y `/tienda`, con búsqueda,
+  paginación y detalle de productos. Publicación explícita por empresa y producto.
+- Alta administrativa de cuentas de socio, vínculo único e identidad por sesión.
+- Panel `/mi-cuenta` con membresía, fecha final, días restantes e historial.
+- Permisos administrativos bloqueados en interfaz y API para el rol de socio.
+- Vista previa local revisada en formato móvil y escritorio con base temporal.
+- Verificación final: 53 archivos y 469 pruebas correctas con dos procesos;
+  compilación API/web correcta y lint sin errores (39 advertencias previas de móvil).
+- Pagos en línea y registro público libre no implementados.
+- Despliegue de web y API pendiente de confirmación.
+
+## Pendientes generales restantes
+
 - Navegación y flujos de negocio móviles.
 - E2E de negocio venta/compra/inventario/auditoría/aislamiento.
 - Streaming de exportaciones grandes.

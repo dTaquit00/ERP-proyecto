@@ -78,6 +78,7 @@ export const productsRepository = {
     if (changes.taxes !== undefined) product.taxes = changes.taxes;
     if (changes.unit !== undefined) product.unit = changes.unit;
     if (changes.isActive !== undefined) product.isActive = changes.isActive;
+    if (changes.isPublic !== undefined) product.isPublic = changes.isPublic;
     if (changes.image !== undefined) product.image = changes.image;
     if (changes.barcode !== undefined) product.barcode = changes.barcode;
     await product.save();

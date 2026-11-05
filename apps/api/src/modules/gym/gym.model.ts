@@ -3,12 +3,14 @@ import { Schema, model, type InferSchemaType, type HydratedDocument } from 'mong
 const memberSchema = new Schema({
   companyId: { type: Schema.Types.ObjectId, required: true, ref: 'Company' },
   customerId: { type: Schema.Types.ObjectId, required: true, ref: 'Customer' },
+  userId: { type: Schema.Types.ObjectId, ref: 'User' },
   memberNumber: { type: String, required: true, trim: true },
   firstName: { type: String, required: true, trim: true }, lastName: { type: String, required: true, trim: true },
   email: { type: String, default: '' }, phone: { type: String, default: '' }, notes: { type: String, default: '' },
   isActive: { type: Boolean, default: true, required: true }, revision: { type: Number, default: 0, required: true },
 }, { timestamps: true, collection: 'gym_members' });
 memberSchema.index({ companyId: 1, memberNumber: 1 }, { unique: true });
+memberSchema.index({ companyId: 1, userId: 1 }, { unique: true, partialFilterExpression: { userId: { $type: 'objectId' } } });
 memberSchema.index({ companyId: 1, isActive: 1, lastName: 1 });
 
 const planSchema = new Schema({
