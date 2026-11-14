@@ -1,17 +1,17 @@
 /* Shared identity with the public Gym OMH store. Scoped to administrative/auth screens. */
 .app-shell, .login-shell {
-  --ink: #141a18;
-  --night: #141a18;
-  --night-soft: #202c26;
-  --violet: #36563c;
-  --magenta: #d7fa63;
-  --gold: #d7fa63;
+  --ink: var(--omh-black);
+  --night: var(--omh-black);
+  --night-soft: #2e181e;
+  --violet: #911b36;
+  --magenta: var(--omh-red-light);
+  --gold: var(--omh-red-light);
   --paper: #fff;
-  --canvas: #f6f5f0;
+  --canvas: var(--omh-paper);
   --surface: #fff;
-  --ink-soft: #526058;
-  --muted: #65706a;
-  --line: #e1e1d8;
+  --ink-soft: #67545a;
+  --muted: #6b5d60;
+  --line: #e7dbdd;
   --green: #39744d;
   font-family: Arial, Helvetica, sans-serif;
   color: var(--ink);
@@ -19,69 +19,67 @@
 }
 .app-shell :is(h1,h2,h3,.big-number,.metric > strong,.metric-icon,.sale-estimate strong),
 .login-shell :is(h1,h2) { font-family: Arial, Helvetica, sans-serif; }
-.gym-brand { display: inline-block; color: inherit; font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -3px; }
-.gym-brand > span { color: #85a635; }
-.gym-brand small { display: block; margin-top: 9px; font-size: 9px; font-weight: 700; letter-spacing: 2.2px; }
-.auth-brand { display: inline-block; margin-bottom: 36px; color: #141a18; text-decoration: none; }
-.login-shell { padding: 40px 24px; background: #f6f5f0; }
-.login-card { border-color: #e1e1d8; border-radius: 12px; background: #fff; box-shadow: 0 16px 60px #141a1808; }
-.login-card h1 { color: #141a18; font-size: clamp(30px,3vw,42px); letter-spacing: -1.5px; }
-.login-card label { color: #354139; }
-.login-card input { border-color: #d7ddd4; border-radius: 6px; }
-.login-card input:focus { border-color: #6b8a13; box-shadow: 0 0 0 3px #d7fa6355; }
+.gym-brand-logo { display: block; width: 96px; height: auto; border-radius: 7px; }
+.auth-brand { display: inline-block; margin-bottom: 36px; color: var(--omh-black); text-decoration: none; }
+.login-shell { padding: 40px 24px; background: var(--omh-paper); }
+.login-card { border-color: #e7dbdd; border-radius: 12px; background: #fff; box-shadow: 0 16px 60px #2310160d; }
+.login-card h1 { color: var(--omh-black); font-size: clamp(30px,3vw,42px); letter-spacing: -1.5px; }
+.login-card label { color: #423239; }
+.login-card input { border-color: #dfcfd3; border-radius: 6px; }
+.login-card input:focus { border-color: var(--omh-red); box-shadow: 0 0 0 3px #b80e3929; }
 .login-password-field { display: flex; gap: 8px; margin-top: 8px; }
 .login-password-field input { min-width: 0; }
 .login-password-field button {
   padding: 0 14px;
-  border: 1px solid #d7ddd4;
+  border: 1px solid #dfcfd3;
   border-radius: 6px;
   background: #fff;
-  color: #36563c;
+  color: #911b36;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
-.login-password-field button:hover { background: #eef3e5; }
-.login-shell .primary, .app-shell .primary { border-radius: 6px; background: #141a18; color: #fff; }
-.login-shell .primary:hover, .app-shell .primary:hover { background: #2e4534; filter: none; transform: none; }
-.login-shell .auth-link { color: #36563c; }
+.login-password-field button:hover { background: #fae9ee; }
+.login-shell .primary, .app-shell .primary { border-radius: 6px; background: var(--omh-red); color: #fff; }
+.login-shell .primary:hover, .app-shell .primary:hover { background: #880d2b; filter: none; transform: none; }
+.login-shell .auth-link { color: #911b36; }
 .login-welcome { grid-template-columns: minmax(0,1.05fr) minmax(420px,1fr); gap: 0; align-items: stretch; padding: 0; }
 .login-welcome .login-card { width: min(100%,500px); align-self: center; justify-self: center; margin: 44px 0; padding: 42px 48px; border: 0; background: transparent; box-shadow: none; }
-.auth-kicker { margin: 0 0 15px; color: #65706a; font-size: 10px; font-weight: 700; letter-spacing: 1.8px; }
-.auth-story { position: relative; display: flex; min-height: 100vh; flex-direction: column; justify-content: space-between; overflow: hidden; padding: 44px clamp(28px,5vw,80px); background: #141a18; color: #f6f5f0; }
-.auth-story::after { position: absolute; right: -180px; bottom: -240px; width: 600px; height: 600px; border: 1px solid #d7fa6330; border-radius: 50%; box-shadow: 0 0 0 70px #d7fa6306,0 0 0 140px #d7fa6305; content: ''; pointer-events: none; }
+.auth-kicker { margin: 0 0 15px; color: #6b5d60; font-size: 10px; font-weight: 700; letter-spacing: 1.8px; }
+.auth-story { position: relative; display: flex; min-height: 100vh; flex-direction: column; justify-content: space-between; overflow: hidden; padding: 44px clamp(28px,5vw,80px); background: var(--omh-black); color: var(--omh-paper); }
+.auth-story::after { position: absolute; right: -180px; bottom: -240px; width: 600px; height: 600px; border: 1px solid #ff6c9040; border-radius: 50%; box-shadow: 0 0 0 70px #ff6c900b,0 0 0 140px #ff6c9008; content: ''; pointer-events: none; }
 .auth-story > * { position: relative; z-index: 1; }
-.auth-story-back { align-self: flex-start; color: #f6f5f0; font-size: 13px; text-decoration: none; }
-.auth-story .auth-kicker { color: #d7fa63; }
-.auth-story h2 { color: #f6f5f0; font-size: clamp(44px,5.5vw,80px); font-weight: 800; line-height: 1.03; letter-spacing: -3.5px; }
-.auth-story h2 em { color: #d7fa63; font-style: normal; }
-.auth-story h2 + p { max-width: 320px; margin-top: 28px; color: #b8c1b9; font-size: 15px; line-height: 1.8; }
+.auth-story-back { align-self: flex-start; color: var(--omh-paper); font-size: 13px; text-decoration: none; }
+.auth-story .auth-kicker { color: var(--omh-red-light); }
+.auth-story h2 { color: var(--omh-paper); font-size: clamp(44px,5.5vw,80px); font-weight: 800; line-height: 1.03; letter-spacing: -3.5px; }
+.auth-story h2 em { color: var(--omh-red-light); font-style: normal; }
+.auth-story h2 + p { max-width: 320px; margin-top: 28px; color: #ddcbd0; font-size: 15px; line-height: 1.8; }
 .auth-story-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 36px; padding-top: 20px; border-top: 1px solid #ffffff25; font-size: 9px; letter-spacing: 1.4px; }
-.auth-story-footer > span:last-child { color: #d7fa63; font-size: 28px; }
-.app-shell .sidebar { padding-top: 30px; background: #141a18; color: #f6f5f0; }
-.app-shell .side-brand { margin: 0 12px 30px; overflow: visible; color: #f6f5f0; text-decoration: none; }
-.app-shell .gym-brand > span { color: #d7fa63; }
-.app-shell .workspace-label { color: #a6b3a7; }
-.app-shell .workspace-dot { background: #d7fa63; box-shadow: none; }
-.app-shell .nav-caption { color: #90a092; }
-.app-shell .sidebar nav a { color: #c3cec4; font-size: 13px; }
-.app-shell .sidebar nav a.active { background: #d7fa63; color: #141a18; font-weight: 700; }
+.auth-story-footer > span:last-child { color: var(--omh-red-light); font-size: 28px; }
+.app-shell .sidebar { padding-top: 30px; background: var(--omh-black); color: var(--omh-paper); }
+.app-shell .side-brand { margin: 0 12px 30px; overflow: visible; color: var(--omh-paper); text-decoration: none; }
+
+.app-shell .workspace-label { color: #cdb6bd; }
+.app-shell .workspace-dot { background: var(--omh-red-light); box-shadow: none; }
+.app-shell .nav-caption { color: #c6aab3; }
+.app-shell .sidebar nav a { color: #e4d5d9; font-size: 13px; }
+.app-shell .sidebar nav a.active { background: var(--omh-red); color: #fff; font-weight: 700; }
 .app-shell .sidebar nav a.active::before { display: none; }
-.app-shell .account-avatar { background: #2e4032; color: #d7fa63; }
-.app-shell .account-copy strong { color: #f6f5f0; }
-.app-shell .account-copy span { color: #a6b3a7; }
-.app-shell .logout-button { color: #d7fa63; }
-.app-shell .topbar { background: #f6f5f0f5; }
-.app-shell .topbar-actions > a { color: #36563c; font-size: 12px; }
-.app-shell .breadcrumb span { color: #65706a; }
+.app-shell .account-avatar { background: #49212d; color: var(--omh-red-light); }
+.app-shell .account-copy strong { color: var(--omh-paper); }
+.app-shell .account-copy span { color: #cdb6bd; }
+.app-shell .logout-button { color: var(--omh-red-light); }
+.app-shell .topbar { background: #fff8f9f5; }
+.app-shell .topbar-actions > a { color: #911b36; font-size: 12px; }
+.app-shell .breadcrumb span { color: #6b5d60; }
 .app-shell .panel, .app-shell .metric { border-radius: 10px; box-shadow: none; }
-.app-shell .eyebrow { color: #65706a; }
-.app-shell .metric { --metric-color: #527239; }
-.app-shell .metric-top, .app-shell .metric > small { color: #65706a; }
-.app-shell .metric > strong { color: #141a18; }
-.app-shell :is(.record-count,.empty-icon,.sale-estimate,.accent) { border-color: #dce5cf; background: #f0f4e7; color: #36563c; }
-.app-shell :is(input,select,textarea):focus-visible { outline: 2px solid #6b8a13; outline-offset: 2px; }
-.app-shell :is(a,button):focus-visible, .login-shell :is(a,button):focus-visible { outline: 3px solid #85a635; outline-offset: 3px; }
+.app-shell .eyebrow { color: #6b5d60; }
+.app-shell .metric { --metric-color: #a21b40; }
+.app-shell .metric-top, .app-shell .metric > small { color: #6b5d60; }
+.app-shell .metric > strong { color: var(--omh-black); }
+.app-shell :is(.record-count,.empty-icon,.sale-estimate,.accent) { border-color: #ead2da; background: #faedf1; color: #911b36; }
+.app-shell :is(input,select,textarea):focus-visible { outline: 2px solid var(--omh-red); outline-offset: 2px; }
+.app-shell :is(a,button):focus-visible, .login-shell :is(a,button):focus-visible { outline: 3px solid var(--omh-red-light); outline-offset: 3px; }
 @media (max-width: 900px) {
   .login-welcome { grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); }
   .login-welcome .login-card { padding: 36px 28px; }
@@ -98,8 +96,8 @@
   .app-shell { display: block; }
   .app-shell .sidebar { position: static; width: 100%; height: auto; padding: 20px 16px 12px; }
   .app-shell .side-brand { display: inline-block; margin: 0 0 18px; }
-  .app-shell .gym-brand { font-size: 32px; }
-  .app-shell .gym-brand small { font-size: 8px; }
+  .app-shell .gym-brand-logo { width: 62px; }
+
   .app-shell .workspace-label { display: none; }
   .app-shell .sidebar nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; }
   .app-shell .nav-caption { display: none; }

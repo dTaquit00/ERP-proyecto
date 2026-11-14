@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 :root {
+  --omh-black: #190f13;
+  --omh-red: #b20d37;
+  --omh-red-light: #ff839f;
+  --omh-paper: #fff8f9;
   font-family: 'DM Sans', sans-serif;
   color: #15182f;
   background: #f4f5f9;

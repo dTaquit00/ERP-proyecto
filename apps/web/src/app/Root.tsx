@@ -64,9 +64,9 @@ function LoginPage() {
   if (user) return <Navigate to={getLandingPath(user.permissions, '')} replace />;
   return (
     <main className="login-shell login-welcome">
-      <section className="auth-story" aria-label="Bienvenido a Gym OMH"><Link to="/tienda" className="auth-story-back">← Volver a la tienda</Link><div><p className="auth-kicker">GYM OMH · TU ESPACIO</p><h2>Tu esfuerzo.<br />Tu siguiente <em>nivel.</em></h2><p>Entrena, crece y sigue avanzando. Todo lo que necesitas, en un mismo lugar.</p></div><div className="auth-story-footer"><span>FUERZA · CONSTANCIA · COMUNIDAD</span><span aria-hidden="true">↗</span></div></section>
+      <section className="auth-story" aria-label="Bienvenido a Gym OMH"><Link to="/tienda" className="auth-story-back">← Volver a la tienda</Link><div><p className="auth-kicker">GYM OMH · TU ESPACIO</p><h2>Tu esfuerzo.<br />Tu siguiente <em>nivel.</em></h2><p>Entrena, crece y sigue avanzando. Todo lo que necesitas, en un mismo lugar.</p></div><div className="auth-story-footer"><span>#ACTITUD OMH</span><span aria-hidden="true">↗</span></div></section>
       <form className="login-card" onSubmit={submit}>
-        <Link className="auth-brand" to="/tienda" aria-label="Gym OMH, volver a la tienda"><span className="gym-brand">OMH<span>.</span><small>GYM & NUTRICIÓN</small></span></Link>
+        <Link className="auth-brand" to="/tienda" aria-label="Gym OMH, volver a la tienda"><img className="gym-brand-logo" src="/gym-omh-logo.png" width="367" height="368" alt="Gym OMH" /></Link>
         <p className="auth-kicker">BIENVENIDO DE NUEVO</p>
         <h1>Tu próximo paso<br />empieza aquí.</h1>
         <p className="muted">Accede a tu membresía o al panel del gimnasio según tu cuenta.</p>
@@ -110,7 +110,7 @@ function ForgotPasswordPage() {
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo solicitar el enlace'); }
     finally { setSending(false); }
   }
-  return <main className="login-shell"><form className="login-card" onSubmit={(event) => void submit(event)}><Link className="auth-brand" to="/tienda" aria-label="Gym OMH, volver a la tienda"><span className="gym-brand">OMH<span>.</span><small>GYM & NUTRICIÓN</small></span></Link><h1>Recuperar contraseña</h1><p className="muted">Te enviaremos un enlace si encontramos una cuenta con esos datos.</p><label>Correo<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Empresa (opcional)<input value={companyId} onChange={(event) => setCompanyId(event.target.value)} /></label>{message && <p className="success">{message}</p>}{error && <p className="error">{error}</p>}<button className="primary" disabled={sending}>{sending ? 'Enviando…' : 'Enviar enlace'}</button><Link className="auth-link" to="/login">Volver a iniciar sesión</Link></form></main>;
+  return <main className="login-shell"><form className="login-card" onSubmit={(event) => void submit(event)}><Link className="auth-brand" to="/tienda" aria-label="Gym OMH, volver a la tienda"><img className="gym-brand-logo" src="/gym-omh-logo.png" width="367" height="368" alt="Gym OMH" /></Link><h1>Recuperar contraseña</h1><p className="muted">Te enviaremos un enlace si encontramos una cuenta con esos datos.</p><label>Correo<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Empresa (opcional)<input value={companyId} onChange={(event) => setCompanyId(event.target.value)} /></label>{message && <p className="success">{message}</p>}{error && <p className="error">{error}</p>}<button className="primary" disabled={sending}>{sending ? 'Enviando…' : 'Enviar enlace'}</button><Link className="auth-link" to="/login">Volver a iniciar sesión</Link></form></main>;
 }
 
 function ResetPasswordPage() {
@@ -128,7 +128,7 @@ function ResetPasswordPage() {
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo cambiar la contraseña'); }
     finally { setSaving(false); }
   }
-  return <main className="login-shell"><form className="login-card" onSubmit={(event) => void submit(event)}><Link className="auth-brand" to="/tienda" aria-label="Gym OMH, volver a la tienda"><span className="gym-brand">OMH<span>.</span><small>GYM & NUTRICIÓN</small></span></Link><h1>Nueva contraseña</h1><p className="muted">Elige una contraseña segura para tu cuenta.</p>{token ? <label>Nueva contraseña<input type="password" minLength={12} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /></label> : <p className="error">El enlace no contiene un token válido.</p>}{message && <p className="success">{message} <Link to="/login">Iniciar sesión</Link></p>}{error && <p className="error">{error}</p>}{token && !message && <button className="primary" disabled={saving}>{saving ? 'Guardando…' : 'Cambiar contraseña'}</button>}</form></main>;
+  return <main className="login-shell"><form className="login-card" onSubmit={(event) => void submit(event)}><Link className="auth-brand" to="/tienda" aria-label="Gym OMH, volver a la tienda"><img className="gym-brand-logo" src="/gym-omh-logo.png" width="367" height="368" alt="Gym OMH" /></Link><h1>Nueva contraseña</h1><p className="muted">Elige una contraseña segura para tu cuenta.</p>{token ? <label>Nueva contraseña<input type="password" minLength={12} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /></label> : <p className="error">El enlace no contiene un token válido.</p>}{message && <p className="success">{message} <Link to="/login">Iniciar sesión</Link></p>}{error && <p className="error">{error}</p>}{token && !message && <button className="primary" disabled={saving}>{saving ? 'Guardando…' : 'Cambiar contraseña'}</button>}</form></main>;
 }
 
 function ChangePasswordPage() {
@@ -182,7 +182,7 @@ function Shell() {
 
   return <div className="app-shell">
     <aside className="sidebar">
-      <Link className="side-brand" to={getLandingPath(user.permissions)} aria-label="Gym OMH, ir a mis módulos"><span className="gym-brand">OMH<span>.</span><small>GYM & NUTRICIÓN</small></span></Link>
+      <Link className="side-brand" to={getLandingPath(user.permissions)} aria-label="Gym OMH, ir a mis módulos"><img className="gym-brand-logo" src="/gym-omh-logo.png" width="367" height="368" alt="Gym OMH" /></Link>
       <div className="workspace-label"><span className="workspace-dot" /> PANEL DEL GIMNASIO</div>
       <nav aria-label="Navegación principal">
         <p className="nav-caption">OPERACIÓN</p>{renderLinks(operationLinks)}
