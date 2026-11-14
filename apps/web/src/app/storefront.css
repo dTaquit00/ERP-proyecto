@@ -2,3 +2,80 @@
 
 .omh-product-dialog{color:var(--omh-black);border:0;max-height:90vh;overflow:auto}.omh-product-dialog::backdrop{background:#190b10bb}.omh-product-dialog:focus-visible{outline:3px solid var(--omh-red);outline-offset:4px}.omh-hero h1,.omh-membership-card h2{color:#fff}
 .omh-search .omh-refresh{margin-top:12px;background:transparent;color:#8a1a33;padding:8px 0;text-decoration:underline;font-size:12px}.omh-search .omh-refresh:disabled{opacity:.5}
+
+/* The original artwork blends into the same red light as the hero. */
+.omh-header {
+  padding-block: 14px;
+  background: #190f13;
+  color: #fff;
+  border-bottom: 1px solid #ffffff24;
+}
+.omh-header .omh-brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.omh-header .gym-brand-logo { width: 52px; border: 1px solid #ffffff26; }
+.omh-wordmark {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+.omh-wordmark strong { color: var(--omh-red-light); }
+.omh-wordmark small {
+  display: block;
+  margin-top: 6px;
+  color: #e0d3d6;
+  font-size: 8px;
+  letter-spacing: .17em;
+}
+.omh-header .omh-account { border-color: #ffffff55; }
+.omh-header .omh-account:hover { background: #ffffff12; }
+.omh-header :focus-visible, .omh-hero :focus-visible { outline-color: var(--omh-red-light); }
+
+.omh-hero {
+  align-items: center;
+  background: radial-gradient(ellipse at 78% 52%, #76101d 0%, #300f17 36%, transparent 67%), #190f13;
+}
+.omh-hero-copy { position: relative; z-index: 1; min-width: 0; }
+.omh-hero h1 { font-size: clamp(44px, 6vw, 90px); letter-spacing: -.055em; }
+.omh-hero-art { min-height: 0; }
+.omh-emblem {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  width: min(100%, 510px);
+  aspect-ratio: 1;
+}
+.omh-emblem::before {
+  position: absolute;
+  inset: 4%;
+  border: 1px solid #ffb5bc42;
+  border-radius: 50%;
+  box-shadow: 0 0 0 19px #ff85990d, 0 0 0 20px #ff859925;
+  content: '';
+}
+.omh-hero-art .omh-emblem img {
+  position: relative;
+  width: 87%;
+  border: 0;
+  border-radius: 0;
+  mask-image: radial-gradient(circle closest-side, #000 88%, transparent 100%);
+}
+
+@media (max-width: 800px) {
+  .omh-hero-art { max-width: 410px; }
+}
+@media (max-width: 480px) {
+  .omh-header { gap: 8px; }
+  .omh-header .omh-brand { gap: 7px; }
+  .omh-header .gym-brand-logo { width: 40px; }
+  .omh-wordmark { font-size: 15px; }
+  .omh-wordmark small { font-size: 7px; }
+  .omh-header .omh-account { gap: 5px; padding: 9px; }
+  .omh-hero h1 { font-size: clamp(37px, 10vw, 47px); }
+  .omh-hero { background: radial-gradient(ellipse at 50% 77%, #76101d, transparent 67%), #190f13; }
+}
