@@ -45,7 +45,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retry 
   if (response.status === 429) {
     const wakingUp = response.headers.get('x-render-routing') === 'hibernate-rate-limited';
     throw new ApiError(wakingUp
-      ? 'El servidor aún no está disponible. Espera unos minutos antes de iniciar sesión.'
+      ? 'El servidor está temporalmente limitado por el proveedor de alojamiento. Intenta de nuevo más tarde.'
       : 'Demasiadas solicitudes. Espera unos minutos antes de volver a intentarlo.');
   }
   if (!response.ok) {

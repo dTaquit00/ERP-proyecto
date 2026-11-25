@@ -32,3 +32,9 @@ export const authRateLimiter = createRateLimit({
   windowMs: 15 * 60 * 1000,
   limit: env.RATE_LIMIT_AUTH_MAX,
 });
+
+/** Las renovaciones automáticas tienen su propio contador por IP. */
+export const sessionRateLimiter = createRateLimit({
+  windowMs: env.RATE_LIMIT_WINDOW_MS,
+  limit: env.RATE_LIMIT_MAX,
+});
