@@ -214,6 +214,21 @@ describe('GET /api/v1/auth/me', () => {
 });
 
 describe('POST /api/v1/auth/refresh', () => {
+  it('solo permite una renovación simultánea con la misma cookie', async () => {
+    const login = await request(app).post('/api/v1/auth/login')
+      .send({ email: 'admin@test.local', password: TEST_PASSWORD });
+    expect(login.status).toBe(200);
+    const cookie = (login.headers['set-cookie'] as unknown as string[])[0]!.split(';')[0]!;
+    const results = await Promise.all([
+      request(app).post('/api/v1/auth/refresh').set('Cookie', cookie),
+      request(app).post('/api/v1/auth/refresh').set('Cookie', cookie),
+    ]);
+    expect(results.map((result) => result.status).sort()).toEqual([200, 401]);
+    const winner = results.find((result) => result.status === 200)!;
+    const nextCookie = (winner.headers['set-cookie'] as unknown as string[])[0]!.split(';')[0]!;
+    expect((await request(app).post('/api/v1/auth/refresh').set('Cookie', nextCookie)).status).toBe(200);
+  });
+
   it('rechaza la petición sin cookie de sesión', async () => {
     const res = await request(app).post('/api/v1/auth/refresh');
     expect(res.status).toBe(401);

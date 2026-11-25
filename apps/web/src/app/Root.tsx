@@ -538,7 +538,7 @@ function ProductFormPage() {
   if (id ? !canRead : !canWrite) return <ErrorState message={id ? 'No tienes permiso para consultar productos.' : 'No tienes permiso para crear productos.'} />;
   if (loading) return <Loading />;
   if (id && !entityLoaded) return <div className="panel"><h2>No se pudo abrir este producto</h2><p className="error">{error || 'No se pudo cargar el producto.'}</p><Link className="secondary-button" to="/products">Volver al listado</Link></div>;
-  const field = (label: string, key: 'code' | 'sku' | 'name' | 'purchasePrice' | 'salePrice' | 'unit' | 'barcode' | 'image', props: Record<string, string> = {}) => (
+  const field = (label: string, key: 'code' | 'sku' | 'name' | 'purchasePrice' | 'salePrice' | 'unit' | 'barcode' | 'image', props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <label>{label}<input {...props} disabled={!canWrite} value={form[key]} onChange={(event) => update(key, event.target.value)} /></label>
   );
   return <div className="panel">
@@ -546,15 +546,15 @@ function ProductFormPage() {
     {error && <ErrorState message={error} />}
     {!id && canWrite && !canReadCategories && <p className="error">Tu rol necesita permiso para consultar categorías antes de crear un producto.</p>}{!id && canWrite && canReadCategories && !categories.length && <p className="error">No hay categorías disponibles. Crea una categoría antes de registrar productos.</p>}
     <form className="product-form" onSubmit={(event) => void submit(event)}>
-      {field('Nombre', 'name', { required: 'true', minLength: '2', maxLength: '120' })}
-      {field('SKU', 'sku', { required: 'true', maxLength: '40' })}
+      {field('Nombre', 'name', { required: true, minLength: 2, maxLength: 120 })}
+      {field('SKU', 'sku', { required: true, maxLength: 40 })}
       <label>Categoría{canReadCategories ? <select required value={form.categoryId} disabled={!canWrite} onChange={(event) => update('categoryId', event.target.value)}><option value="">Selecciona una categoría</option>{categories.map((category) => <option key={String(category.id)} value={String(category.id)}>{String(category.name)}</option>)}</select> : <><input value={form.categoryId || '—'} disabled />{id && <small className="muted">No tienes permiso para consultar o cambiar categorías; se conservará la categoría actual.</small>}</>}</label>
-      {field('Precio de compra', 'purchasePrice', { type: 'number', min: '0', step: '0.01', required: 'true' })}
-      {field('Precio de venta', 'salePrice', { type: 'number', min: '0', step: '0.01', required: 'true' })}
+      {field('Precio de compra', 'purchasePrice', { type: 'number', min: '0', step: '0.01', required: true })}
+      {field('Precio de venta', 'salePrice', { type: 'number', min: '0', step: '0.01', required: true })}
       <label>Unidad<select required value={form.unit} disabled={!canWrite} onChange={(event) => { update('unit', event.target.value); setLegacyUnit(null); }}><option value="" disabled>Selecciona una unidad</option>{legacyUnit && <option value={legacyUnit} disabled>Valor anterior no estandarizado: {legacyUnit}</option>}{PRODUCT_UNITS.map((unit) => <option key={unit} value={unit}>{productUnitLabels[unit]}</option>)}</select>{legacyUnit && <small className="muted">El producto tiene una unidad anterior no estandarizada. Selecciona una unidad válida para guardar.</small>}</label>
-      {field('Código interno', 'code', { maxLength: '60' })}
-      {field('Código de barras', 'barcode', { maxLength: '60' })}
-      {field('URL de imagen', 'image', { type: 'url', maxLength: '500' })}
+      {field('Código interno', 'code', { maxLength: 60 })}
+      {field('Código de barras', 'barcode', { maxLength: 60 })}
+      {field('URL de imagen', 'image', { type: 'url', maxLength: 500 })}
       <label>Descripción<textarea disabled={!canWrite} value={form.description} maxLength={1000} onChange={(event) => update('description', event.target.value)} /></label>
       <section className="sale-lines"><div className="panel-title"><h3>Impuestos del producto</h3>{canWrite && <button type="button" onClick={() => update('taxes', [...form.taxes, { name: '', rate: 0 }])}>+ Agregar impuesto</button>}</div>{!form.taxes.length && <small className="muted">Este producto no tiene impuestos adicionales.</small>}{form.taxes.map((tax, index) => <div className="sale-line tax-line" key={index}><label>Nombre<input disabled={!canWrite} required maxLength={40} value={tax.name} onChange={(event) => update('taxes', form.taxes.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} /></label><label>Tasa (%)<input disabled={!canWrite} type="number" required min="0" max="100" step="0.01" value={tax.rate} onChange={(event) => update('taxes', form.taxes.map((item, itemIndex) => itemIndex === index ? { ...item, rate: Number(event.target.value) } : item))} /></label>{canWrite && <button type="button" onClick={() => update('taxes', form.taxes.filter((_, itemIndex) => itemIndex !== index))}>Quitar</button>}</div>)}</section>
       <label className="checkbox-label"><input type="checkbox" checked={form.isPublic} disabled={!canWrite} onChange={(event) => update('isPublic', event.target.checked)} />Visible en la tienda pública de Gym OMH</label>{canWrite && <small className="muted">El producto aparecerá en la página pública cuando esté activo y la tienda esté habilitada. <Link to="/gym/setup">Revisar puesta en marcha</Link></small>}<label className="checkbox-label"><input type="checkbox" checked={form.isActive} disabled={!canWrite} onChange={(event) => update('isActive', event.target.checked)} />Producto activo</label>

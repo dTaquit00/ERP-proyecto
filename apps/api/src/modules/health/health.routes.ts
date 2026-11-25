@@ -25,6 +25,7 @@ healthRoutes.get('/live', (_req, res) => {
 healthRoutes.get('/ready', (_req, res) => {
   const database = getDatabaseState();
   const ready = database === 'connected';
-  res.status(ready ? 200 : 503);
-  sendOk(res, { status: ready ? 'ok' : 'degraded', database, timestamp: new Date().toISOString() });
+  res.status(ready ? 200 : 503).json({
+    data: { status: ready ? 'ok' : 'degraded', database, timestamp: new Date().toISOString() },
+  });
 });

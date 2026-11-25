@@ -6,9 +6,51 @@ let refreshPromise: Promise<string | null> | null = null;
 let onAuthenticationExpired: (() => void) | null = null;
 
 export class ApiError extends Error {
-  constructor(message: string, readonly code?: string) {
+  constructor(message: string, readonly code?: string, readonly status?: number) {
     super(message);
   }
+}
+
+type ApiBody<T> = {
+  data?: T;
+  error?: { message?: string; code?: string; details?: Array<{ message?: string }> };
+};
+
+async function fetchApi(path: string, init: RequestInit): Promise<Response> {
+  const timeout = AbortSignal.timeout(65_000);
+  const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+  try {
+    return await fetch(`${API_URL}${path}`, { ...init, signal, credentials: 'include' });
+  } catch (reason) {
+    if (init.signal?.aborted) throw reason;
+    throw new ApiError(timeout.aborted
+      ? 'El servidor tardó demasiado en responder. Vuelve a intentarlo en unos minutos.'
+      : 'No pudimos conectar con el servidor. Vuelve a intentarlo.');
+  }
+}
+
+async function readBody<T>(response: Response): Promise<ApiBody<T> | null> {
+  const body: unknown = await response.json().catch(() => null);
+  return body && typeof body === 'object' && !Array.isArray(body) ? body as ApiBody<T> : null;
+}
+
+function responseError(response: Response, body: ApiBody<unknown> | null): ApiError {
+  if (response.status === 429) {
+    const infrastructure = response.headers.get('x-render-routing') === 'hibernate-rate-limited'
+      || response.headers.get('cf-mitigated') === 'challenge';
+    return new ApiError(infrastructure
+      ? 'El servidor está temporalmente limitado por el proveedor de alojamiento. Intenta de nuevo más tarde.'
+      : 'Demasiadas solicitudes. Espera unos minutos antes de volver a intentarlo.',
+    body?.error?.code ?? 'RATE_LIMITED', response.status);
+  }
+  const fallback = response.status >= 500
+    ? 'El servidor no está disponible en este momento. Vuelve a intentarlo en unos minutos.'
+    : 'No se pudo completar la solicitud';
+  const details = body?.error?.details?.map((detail) => detail.message).filter(Boolean);
+  const message = details?.length
+    ? `${body?.error?.message ?? fallback}: ${[...new Set(details)].join('. ')}`
+    : body?.error?.message ?? fallback;
+  return new ApiError(message, body?.error?.code, response.status);
 }
 
 export function setAccessToken(token: string | null): void { accessToken = token; }
@@ -16,9 +58,17 @@ export function setAuthenticationExpiredHandler(handler: (() => void) | null): v
 
 async function refresh(): Promise<string | null> {
   if (!refreshPromise) {
-    refreshPromise = fetch(`${API_URL}/auth/refresh`, { method: 'POST', credentials: 'include' })
-      .then(async (response) => response.ok ? (await response.json()).data.accessToken as string : null)
-      .catch(() => null)
+    refreshPromise = apiRequest<{ accessToken: string }>('/auth/refresh', { method: 'POST' }, false)
+      .then((result) => {
+        if (typeof result?.accessToken !== 'string' || !result.accessToken) {
+          throw new ApiError('El servidor devolvió una sesión inesperada. Vuelve a iniciar sesión.');
+        }
+        return result.accessToken;
+      })
+      .catch((reason: unknown) => {
+        if (reason instanceof ApiError && (reason.status === 401 || reason.status === 403)) return null;
+        throw reason;
+      })
       .finally(() => { refreshPromise = null; });
   }
   const token = await refreshPromise;
@@ -30,9 +80,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retry 
   const headers = new Headers(init.headers);
   headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-  const response = await fetch(`${API_URL}${path}`, { ...init, headers, credentials: 'include' }).catch(() => {
-    throw new ApiError('No pudimos conectar con el servidor. Vuelve a intentarlo.');
-  });
+  const response = await fetchApi(path, { ...init, headers });
   if (response.status === 401 && retry && !path.startsWith('/auth/')) {
     const token = await refresh();
     if (token) return apiRequest<T>(path, init, false);
@@ -41,20 +89,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retry 
     accessToken = null;
     onAuthenticationExpired?.();
   }
-  const body = await response.json().catch(() => null) as { data?: T; error?: { message?: string; code?: string } } | null;
-  if (response.status === 429) {
-    const wakingUp = response.headers.get('x-render-routing') === 'hibernate-rate-limited';
-    throw new ApiError(wakingUp
-      ? 'El servidor está temporalmente limitado por el proveedor de alojamiento. Intenta de nuevo más tarde.'
-      : 'Demasiadas solicitudes. Espera unos minutos antes de volver a intentarlo.');
-  }
-  if (!response.ok) {
-    const fallback = response.status >= 500
-      ? 'El servidor no está disponible en este momento. Vuelve a intentarlo en unos minutos.'
-      : 'No se pudo completar la solicitud';
-    throw new ApiError(body?.error?.message ?? fallback, body?.error?.code);
-  }
-  if (!body) throw new ApiError('El servidor devolvió una respuesta inesperada. Vuelve a intentarlo.');
+  const body = await readBody<T>(response);
+  if (!response.ok) throw responseError(response, body);
+  if (!body || !Object.hasOwn(body, 'data')) throw new ApiError('El servidor devolvió una respuesta inesperada. Vuelve a intentarlo.');
   return body.data as T;
 }
 
@@ -87,7 +124,7 @@ export async function bootstrap(): Promise<Record<string, unknown> | null> { con
 export async function downloadReport(path: string, retry = true): Promise<{ blob: Blob; filename: string }> {
   const headers = new Headers();
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-  const response = await fetch(`${API_URL}${path}`, { headers, credentials: 'include' });
+  const response = await fetchApi(path, { headers });
   if (response.status === 401 && retry) {
     const token = await refresh();
     if (token) return downloadReport(path, false);
@@ -97,8 +134,7 @@ export async function downloadReport(path: string, retry = true): Promise<{ blob
     onAuthenticationExpired?.();
   }
   if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { error?: { message?: string } };
-    throw new Error(body.error?.message ?? 'No se pudo descargar el reporte');
+    throw responseError(response, await readBody(response));
   }
   const disposition = response.headers.get('Content-Disposition') ?? '';
   const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] ?? 'reporte.csv';

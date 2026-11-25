@@ -17,4 +17,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={{ user, loading, error, login, logout, can: (permission) => user?.permissions.includes(permission) ?? false }}>{children}</AuthContext.Provider>;
 }
 export function useAuth(): AuthContextValue { const value = useContext(AuthContext); if (!value) throw new Error('useAuth debe usarse dentro de AuthProvider'); return value; }
-export function useResource<T>(path: string, enabled = true) { const [data, setData] = useState<T | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null); useEffect(() => { let active = true; if (!enabled) { setData(null); setError(null); setLoading(false); return () => { active = false; }; } setLoading(true); setError(null); apiRequest<T>(path).then((value) => { if (active) setData(value); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : 'Error de red'); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [path, enabled]); return { data, loading, error }; }
+export function useResource<T>(path: string, enabled = true) {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(enabled);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    setData(null);
+    setError(null);
+    setLoading(enabled);
+    if (!enabled) return;
+    apiRequest<T>(path, { signal: controller.signal })
+      .then((value) => { if (!controller.signal.aborted) setData(value); })
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'Error de red');
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [path, enabled]);
+  return { data, loading, error };
+}

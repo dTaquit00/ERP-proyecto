@@ -122,3 +122,28 @@
 - E2E de negocio venta/compra/inventario/auditoría/aislamiento.
 - Streaming de exportaciones grandes.
 - Revisión de compatibilidad Vitest 5.
+
+## Revisión funcional — 25 de noviembre de 2026
+
+- Corregida la renovación de sesión concurrente con una actualización atómica.
+  Solo una solicitud puede consumir cada cookie de renovación.
+- Los fallos de red, límites del alojamiento y respuestas incompletas muestran
+  errores recuperables. Una renovación bloqueada temporalmente conserva la sesión.
+  Las solicitudes tienen un tiempo máximo de espera de 65 segundos.
+- Las consultas de pantalla se cancelan al salir o cambiar de filtro. El botón
+  de reintento del catálogo vuelve a consultar productos sin recargar la sesión.
+- Corregida la apertura del detalle de producto con React StrictMode y los
+  atributos obligatorios del formulario de productos.
+- La sonda de disponibilidad devuelve 503 si MongoDB está desconectado.
+- Verificación automatizada: suite completa de 488 pruebas en 57 archivos,
+  más 3 pruebas de disponibilidad añadidas después y 52 pruebas web repetidas
+  tras los ajustes finales. Total de casos distintos aprobados: 491.
+- Navegador local con base temporal: inicio y cierre de sesión, habilitación de
+  tienda, alta de categoría y producto, publicación y detalle público, alta de
+  socio, plan e inscripción con vigencia calculada.
+- La descarga de Chromium para ejecutar Playwright no terminó por problemas de
+  conexión. Se realizaron las comprobaciones manuales anteriores en el navegador.
+- En producción se observaron respuestas 429 del alojamiento y, posteriormente,
+  respuestas 200 de disponibilidad y catálogo con MongoDB conectado. Render
+  informa que la instancia gratuita puede tardar 50 segundos o más al reactivarse.
+  Queda por confirmar el despliegue del nuevo commit en API y web.

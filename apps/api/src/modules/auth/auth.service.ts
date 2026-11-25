@@ -139,7 +139,8 @@ export const authService = {
     }
 
     const newToken = generateRandomToken(REFRESH_TOKEN_BYTES);
-    await sessionsRepository.rotate(session, hashToken(newToken), refreshExpiry(), new Date());
+    const rotated = await sessionsRepository.rotate(session, hashToken(newToken), refreshExpiry(), new Date());
+    if (!rotated) throw new AuthError('La sesión no es válida o ha expirado', 'SESSION_INVALID');
 
     const result = await buildAuthResult(user, session.id);
     result.refreshToken = newToken;

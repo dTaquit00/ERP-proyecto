@@ -29,11 +29,17 @@ export const sessionsRepository = {
     tokenHash: string,
     expiresAt: Date,
     lastUsedAt: Date,
-  ): Promise<void> {
-    session.tokenHash = tokenHash;
-    session.expiresAt = expiresAt;
-    session.lastUsedAt = lastUsedAt;
-    await session.save();
+  ): Promise<boolean> {
+    const result = await SessionModel.updateOne(
+      {
+        _id: session._id,
+        tokenHash: session.tokenHash,
+        revokedAt: { $exists: false },
+        expiresAt: { $gt: lastUsedAt },
+      },
+      { $set: { tokenHash, expiresAt, lastUsedAt } },
+    ).exec();
+    return result.modifiedCount === 1;
   },
 
   /** Sesiones recientes del usuario (historial M02), más nuevas primero. */
