@@ -1,4 +1,4 @@
-import { beforeAll, afterAll, expect, it } from 'vitest';
+import { beforeAll, afterAll, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { setupTestContext, teardownTestContext, TEST_PASSWORD, type TestContext } from '../helpers/integration.js';
 import { CompanyModel } from '../../apps/api/src/modules/companies/companies.model.js';
@@ -73,4 +73,46 @@ it('un socio inactivo conserva su historial pero no aparece con membresía habil
   await GymMemberModel.updateOne({ _id: memberId }, { $set: { isActive: false } });
   const own = await request(ctx.app).get('/api/v1/portal/me').auth(token, { type: 'bearer' });
   expect(own.status).toBe(200); expect(own.body.data.member.isActive).toBe(false); expect(own.body.data.currentMembership).toBeNull();
+});
+
+it('cuenta correctamente febrero bisiesto, el último día y la renovación siguiente', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  try {
+    vi.setSystemTime(new Date('2028-02-28T18:00:00Z'));
+    const member = await gymService.createMember(ctx.company.id, {
+      memberNumber: 'PORTAL-DATES', firstName: 'Fechas', lastName: 'Prueba',
+      email: '', phone: '', notes: '', isActive: true,
+    });
+    const plan = await gymService.createPlan(ctx.company.id, {
+      name: 'Plan de tres días', description: '', durationDays: 3, price: 90, isActive: true,
+    });
+    const first = await gymService.createEnrollment(ctx.company.id, {
+      memberId: member.id, planId: plan.id, startDate: '2028-02-28', notes: '',
+    }, ctx.admin.id);
+    expect(first.endDate).toBe('2028-03-01');
+    await gymService.createEnrollment(ctx.company.id, {
+      memberId: member.id, planId: plan.id, startDate: '2028-03-02', notes: '',
+    }, ctx.admin.id);
+    await portalService.createAccount(ctx.company.id, member.id, {
+      email: 'dates@portal.test', password: TEST_PASSWORD,
+    });
+    const user = await UserModel.findOne({ companyId: ctx.company.id, email: 'dates@portal.test' });
+    expect(user).not.toBeNull();
+    const own = () => portalService.me(ctx.company.id, user!.id);
+    expect((await own()).currentMembership?.remainingDays).toBe(3);
+    expect((await own()).nextMembership?.startDate).toBe('2028-03-02');
+
+    vi.setSystemTime(new Date('2028-02-29T18:00:00Z'));
+    expect((await own()).currentMembership?.remainingDays).toBe(2);
+    vi.setSystemTime(new Date('2028-03-01T18:00:00Z'));
+    expect((await own()).currentMembership?.remainingDays).toBe(1);
+    vi.setSystemTime(new Date('2028-03-02T18:00:00Z'));
+    const renewed = await own();
+    expect(renewed.currentMembership).toMatchObject({ startDate: '2028-03-02', remainingDays: 3 });
+    expect(renewed.enrollments.find((entry) => entry.id === first.id)?.status).toBe('expired');
+    vi.setSystemTime(new Date('2028-03-05T18:00:00Z'));
+    expect((await own()).currentMembership).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
 });
