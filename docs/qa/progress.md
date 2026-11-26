@@ -121,7 +121,7 @@
 - Navegación y flujos de negocio móviles.
 - E2E de negocio venta/compra/inventario/auditoría/aislamiento.
 - Streaming de exportaciones grandes.
-- Revisión de compatibilidad Vitest 5.
+- Migración de Expo y verificación en dispositivo para resolver los avisos de su cadena móvil.
 
 ## Revisión funcional — 25 de noviembre de 2026
 
@@ -147,3 +147,19 @@
   respuestas 200 de disponibilidad y catálogo con MongoDB conectado. Render
   informa que la instancia gratuita puede tardar 50 segundos o más al reactivarse.
   Queda por confirmar el despliegue del nuevo commit en API y web.
+
+## Pruebas de uso y dependencias — 25 de noviembre de 2026
+
+- Añadida una prueba de membresías que recorre febrero bisiesto, el último día
+  incluido, la activación del plan siguiente y el vencimiento final.
+- Actualizados Vitest a 4.1.12 y las dependencias con correcciones compatibles.
+  La suite completa aprueba 492 pruebas en 58 archivos. Compilan API y web y
+  pasa la comprobación de tipos móvil. Lint conserva 39 advertencias móviles
+  de importaciones de tipos y cero errores.
+- Auditoría general antes/después: 31 avisos (19 moderados, 9 altos, 3 críticos)
+  frente a 12 (9 moderados, 3 altos, cero críticos), todos pendientes en la
+  cadena de Expo. Resolverlos requiere una migración mayor y pruebas móviles.
+- Auditoría de producción de API y web: cero avisos con
+  `npm audit --workspace apps/api --workspace apps/web --omit=dev`.
+- Prueba guiada elegida por el usuario: alta de socio y asignación de membresía.
+  Pendiente confirmar el resultado de esa prueba en la web publicada.

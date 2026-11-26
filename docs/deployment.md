@@ -34,9 +34,12 @@ por ejemplo `https://data-erp-api.onrender.com` (sin `/api/v1`). La Pages Functi
 `functions/api/[[path]].ts` reenvía la ruta recibida (incluido `/api/v1`) al origen
 configurado. La variable `API_ORIGIN` debe ser una URL completa con protocolo HTTPS.
 
-El CI bloquea vulnerabilidades altas y críticas. Actualmente Vitest mantiene dos
-avisos moderados que requieren una actualización mayor; deben resolverse en una
-ventana de compatibilidad antes de elevar el umbral del pipeline.
+El CI bloquea vulnerabilidades altas y críticas. La revisión del 25 de noviembre
+de 2026 actualizó Vitest a 4.1.12 y las dependencias compatibles. La auditoría de
+producción de API y web reportó cero avisos. La auditoría general conserva
+12 avisos de la cadena de Expo del módulo móvil (9 moderados y 3 altos).
+Por ello el paso de auditoría general seguirá señalando un fallo hasta migrar
+Expo y verificar la aplicación móvil en un dispositivo.
 
 ## Rollback y datos
 
